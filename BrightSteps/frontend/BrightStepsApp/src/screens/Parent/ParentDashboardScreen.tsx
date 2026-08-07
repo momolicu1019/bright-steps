@@ -2,6 +2,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { AppLocale, t } from '../../i18n';
+import { PARENT_AI_TIP_KEYS, PARENT_PROGRESS_KEYS, PARENT_REWARD_BADGES } from '../../constants/prototypeContent';
 
 type ParentDashboardScreenProps = {
   childName: string;
@@ -35,26 +36,26 @@ export default function ParentDashboardScreen({ childName, locale, onToggleLangu
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{t('parent.aiTitle')}</Text>
-        <Text style={styles.cardText}>🏠 {t('parent.aiTip1')}</Text>
-        <Text style={styles.cardText}>📖 {t('parent.aiTip2')}</Text>
-        <Text style={styles.cardText}>⏰ {t('parent.aiTip3')}</Text>
+        {PARENT_AI_TIP_KEYS.map((tipKey, index) => (
+          <Text key={tipKey} style={styles.cardText}>{index === 0 ? '🏠' : index === 1 ? '📖' : '⏰'} {t(tipKey)}</Text>
+        ))}
       </View>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{t('parent.progressTitle')}</Text>
         <View style={styles.statsRow}>
-          <Text style={styles.statItem}>{t('parent.progressLine1')}</Text>
-          <Text style={styles.statItem}>{t('parent.progressLine2')}</Text>
+          <Text style={styles.statItem}>{t(PARENT_PROGRESS_KEYS[0])}</Text>
+          <Text style={styles.statItem}>{t(PARENT_PROGRESS_KEYS[1])}</Text>
         </View>
         <View style={styles.statsRow}>
-          <Text style={styles.statItem}>{t('parent.progressLine3')}</Text>
-          <Text style={styles.statItem}>{t('parent.progressLine4')}</Text>
+          <Text style={styles.statItem}>{t(PARENT_PROGRESS_KEYS[2])}</Text>
+          <Text style={styles.statItem}>{t(PARENT_PROGRESS_KEYS[3])}</Text>
         </View>
       </View>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{t('parent.rewards')}</Text>
-        <Text style={styles.cardText}>🏅 🌟 💧 🤝</Text>
+        <Text style={styles.cardText}>{PARENT_REWARD_BADGES.join(' ')}</Text>
         <Text style={styles.cardText}>🐻 Milo the Bear • Level 3</Text>
         <Text style={styles.cardText}>Next: Chef Hat at 50 coins</Text>
       </View>

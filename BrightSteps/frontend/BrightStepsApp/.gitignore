@@ -4,3 +4,4 @@ node_modules
 android
 dist-check
 dist-entry-check
+dist-constants-check

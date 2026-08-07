@@ -12,14 +12,12 @@
     "android": {
       "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#FFF9E5" },
       "package": "com.brightsteps.app",
-      "permissions": ["RECORD_AUDIO"],
-      "buildType": "apk"
+      "permissions": ["RECORD_AUDIO"]
     },
     "web": { "favicon": "./assets/favicon.png" },
     "extra": {
       "apiUrl": "https://your-backend.onrender.com/api",
-      "offlineMode": true,
-      "eas": { "projectId": "replace-with-your-eas-project-id" }
+      "offlineMode": true
     }
   }
 }

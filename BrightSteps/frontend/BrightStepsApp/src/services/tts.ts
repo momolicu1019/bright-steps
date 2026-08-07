@@ -2,10 +2,16 @@ import * as Speech from 'expo-speech';
 
 const ENGLISH_FEMALE_HINTS = ['samantha', 'karen', 'zira', 'aria', 'eva', 'female'];
 const FILIPINO_HINTS = ['fil', 'tl'];
+let availableVoicesPromise: Promise<Speech.Voice[]> | null = null;
+const cachedVoiceIds: Record<string, string | undefined> = {};
+
+function normalizeLangKey(lang: string): 'fil' | 'en' {
+  const loweredLang = lang.toLowerCase();
+  return loweredLang === 'fil' || loweredLang.startsWith('tl') ? 'fil' : 'en';
+}
 
 function pickVoiceIdentifier(voices: Speech.Voice[], lang: string): string | undefined {
-  const loweredLang = lang.toLowerCase();
-  const isFilipino = loweredLang === 'fil' || loweredLang.startsWith('tl');
+  const isFilipino = normalizeLangKey(lang) === 'fil';
 
   const languageMatches = voices.filter((voice) => {
     const voiceLang = voice.language.toLowerCase();
@@ -30,12 +36,26 @@ function pickVoiceIdentifier(voices: Speech.Voice[], lang: string): string | und
   return languageMatches[0]?.identifier;
 }
 
+async function getCachedVoiceIdentifier(lang: string): Promise<string | undefined> {
+  const langKey = normalizeLangKey(lang);
+  if (Object.prototype.hasOwnProperty.call(cachedVoiceIds, langKey)) {
+    return cachedVoiceIds[langKey];
+  }
+
+  if (!availableVoicesPromise) {
+    availableVoicesPromise = Speech.getAvailableVoicesAsync().catch(() => []);
+  }
+
+  const availableVoices = await availableVoicesPromise;
+  const selectedVoiceId = pickVoiceIdentifier(availableVoices, langKey);
+  cachedVoiceIds[langKey] = selectedVoiceId;
+  return selectedVoiceId;
+}
+
 export async function speak(text: string, lang: string = 'en') {
   Speech.stop();
 
-  // Find available voices on the device
-  const availableVoices = await Speech.getAvailableVoicesAsync();
-  const selectedVoiceId = pickVoiceIdentifier(availableVoices, lang);
+  const selectedVoiceId = await getCachedVoiceIdentifier(lang);
 
   Speech.speak(text, {
     language: lang === 'fil' ? 'fil-PH' : 'en-US',

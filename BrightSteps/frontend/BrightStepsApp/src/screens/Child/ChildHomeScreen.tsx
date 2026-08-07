@@ -64,6 +64,7 @@ export default function ChildHomeScreen({ childName, childAge, locale }: ChildHo
                   moduleEmoji: m.emoji,
                   taskKey: 'emotions',
                   childName,
+                  childAge,
                 });
                 return;
               }
@@ -74,6 +75,7 @@ export default function ChildHomeScreen({ childName, childAge, locale }: ChildHo
                   moduleEmoji: m.emoji,
                   taskKey: 'aac',
                   childName,
+                  childAge,
                 });
                 return;
               }
@@ -84,6 +86,7 @@ export default function ChildHomeScreen({ childName, childAge, locale }: ChildHo
                   moduleEmoji: m.emoji,
                   taskKey: 'bubble_pop',
                   childName,
+                  childAge,
                 });
                 return;
               }
@@ -94,6 +97,7 @@ export default function ChildHomeScreen({ childName, childAge, locale }: ChildHo
                   moduleEmoji: m.emoji,
                   taskKey: 'head_to_toe',
                   childName,
+                  childAge,
                 });
                 return;
               }
@@ -102,6 +106,7 @@ export default function ChildHomeScreen({ childName, childAge, locale }: ChildHo
                 moduleKey: m.moduleKey,
                 moduleEmoji: m.emoji,
                 childName,
+                childAge,
               });
             }}
           >
@@ -132,7 +137,7 @@ const styles=StyleSheet.create({
   streakChip:{backgroundColor:'#FFF3D0', paddingHorizontal:12, paddingVertical:8, borderRadius:999},
   streakText:{fontSize:12, fontWeight:'800', color:'#7C2D12'},
   readButton:{backgroundColor:'#E6F0FF', paddingHorizontal:12, paddingVertical:8, borderRadius:12},
-  readButtonText:{fontSize:12, fontWeight:'800', color:'#1D4ED8'},
+  readButtonText:{fontSize:11, fontWeight:'800', color:'#1D4ED8'},
   coinsCard:{marginTop:12, backgroundColor:'#F8FAFF', borderWidth:1, borderColor:'#E5E9F8', borderRadius:14, padding:12},
   coinsLabel:{fontSize:12, color:'#6B7280', fontWeight:'700'},
   coinsValue:{fontSize:20, fontWeight:'900', color:'#111827', marginTop:2},

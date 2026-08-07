@@ -10,6 +10,7 @@ type ActivityDetailScreenProps = {
       moduleEmoji: string;
       taskKey: string;
       childName: string;
+      childAge?: string;
     };
   };
   navigation: {
@@ -25,7 +26,7 @@ type ActivityStep = {
 };
 
 type EmotionChoice = {
-  key: 'happy' | 'sad' | 'angry' | 'scared';
+  key: 'happy' | 'sad' | 'angry' | 'scared' | 'surprise' | 'afraid' | 'disgust';
   emoji: string;
   cardColor: string;
 };
@@ -67,9 +68,18 @@ type MoveExerciseStep = {
   emoji: string;
 };
 
+type MathProblemPreset = {
+  key: string;
+  a: number;
+  b: number;
+  operator: '+' | '-';
+  labelEn: string;
+  labelFil: string;
+};
+
 const ALPHABET_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const NUMBER_TILES = Array.from({ length: 50 }, (_, index) => `${index + 1}`);
-const READING_SENTENCES = [
+const BASE_READING_SENTENCES = [
   'Look at the dog.',
   'I like my hat.',
   'The big pig sat.',
@@ -91,6 +101,9 @@ const EMOTION_CHOICES: EmotionChoice[] = [
   { key: 'sad', emoji: '😢', cardColor: '#C2DDF4' },
   { key: 'angry', emoji: '😡', cardColor: '#F5C8DA' },
   { key: 'scared', emoji: '😨', cardColor: '#D9CEF4' },
+  { key: 'surprise', emoji: '😲', cardColor: '#FFE2B8' },
+  { key: 'afraid', emoji: '😰', cardColor: '#D5E8FF' },
+  { key: 'disgust', emoji: '🤢', cardColor: '#D9F7D8' },
 ];
 
 const SHAPE_CHOICES: ShapeChoice[] = [
@@ -128,6 +141,68 @@ const MOVE_EXERCISE_STEPS: MoveExerciseStep[] = [
   { key: 'knees', labelKey: 'activity.move.step.knees', emoji: '🦵' },
   { key: 'toes', labelKey: 'activity.move.step.toes', emoji: '🦶' },
 ];
+
+const MATH_PROBLEM_PRESETS: MathProblemPreset[] = [
+  {
+    key: 'apples-plus',
+    a: 2,
+    b: 3,
+    operator: '+',
+    labelEn: 'I have 2 apples and get 3 more.',
+    labelFil: 'Mayroon akong 2 mansanas at nadagdagan ng 3.',
+  },
+  {
+    key: 'balls-minus',
+    a: 8,
+    b: 2,
+    operator: '-',
+    labelEn: 'I have 8 balls and give away 2.',
+    labelFil: 'Mayroon akong 8 bola at nagbigay ng 2.',
+  },
+  {
+    key: 'birds-plus',
+    a: 4,
+    b: 1,
+    operator: '+',
+    labelEn: 'There are 4 birds and 1 more comes.',
+    labelFil: 'May 4 na ibon at may dumating pang 1.',
+  },
+  {
+    key: 'stickers-plus',
+    a: 5,
+    b: 2,
+    operator: '+',
+    labelEn: 'I have 5 stickers and get 2 more.',
+    labelFil: 'Mayroon akong 5 sticker at nadagdagan ng 2.',
+  },
+  {
+    key: 'cars-minus',
+    a: 9,
+    b: 4,
+    operator: '-',
+    labelEn: 'I have 9 cars and give 4 away.',
+    labelFil: 'Mayroon akong 9 kotse at nagbigay ng 4.',
+  },
+  {
+    key: 'books-minus',
+    a: 7,
+    b: 3,
+    operator: '-',
+    labelEn: 'There are 7 books and 3 are taken.',
+    labelFil: 'May 7 libro at may kinuha na 3.',
+  },
+];
+
+function shuffleMathPresets(presets: MathProblemPreset[]): MathProblemPreset[] {
+  const list = [...presets];
+  for (let i = list.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const temp = list[i];
+    list[i] = list[j];
+    list[j] = temp;
+  }
+  return list;
+}
 
 const FOCUS_BOARD_HEIGHT = 430;
 const MOVE_STEP_MS = 1800;
@@ -254,16 +329,26 @@ function buildReadingPyramid(sentence: string): string[] {
 
 const TALK_TILES: TalkTile[] = [
   { key: 'i', wordKey: 'activity.talk.word.i', emoji: '🧒', cardColor: '#F5C8DA' },
-  { key: 'want', wordKey: 'activity.talk.word.want', emoji: '💛', cardColor: '#FFEDB0' },
-  { key: 'water', wordKey: 'activity.talk.word.water', emoji: '💧', cardColor: '#C2DDF4' },
-  { key: 'help', wordKey: 'activity.talk.word.help', emoji: '🤝', cardColor: '#C8F4D8' },
-  { key: 'eat', wordKey: 'activity.talk.word.eat', emoji: '🍎', cardColor: '#F9D9BE' },
-  { key: 'more', wordKey: 'activity.talk.word.more', emoji: '✨', cardColor: '#D9CEF4' },
   { key: 'my', wordKey: 'activity.talk.word.my', emoji: '🙋', cardColor: '#FDE7B8' },
   { key: 'name', wordKey: 'activity.talk.word.name', emoji: '🏷️', cardColor: '#CCE9FB' },
   { key: 'is', wordKey: 'activity.talk.word.is', emoji: '🟰', cardColor: '#E5DCF8' },
-  { key: 'to', wordKey: 'activity.talk.word.to', emoji: '➡️', cardColor: '#D7F1DF' },
   { key: 'childName', wordKey: 'activity.talk.word.childName', emoji: '⭐', cardColor: '#FFD9A8', isChildName: true },
+  { key: 'want', wordKey: 'activity.talk.word.want', emoji: '💛', cardColor: '#FFEDB0' },
+  { key: 'need', wordKey: 'activity.talk.word.need', emoji: '🆘', cardColor: '#FFD7CF' },
+  { key: 'help', wordKey: 'activity.talk.word.help', emoji: '🤝', cardColor: '#C8F4D8' },
+  { key: 'to', wordKey: 'activity.talk.word.to', emoji: '➡️', cardColor: '#D7F1DF' },
+  { key: 'take', wordKey: 'activity.talk.word.take', emoji: '✋', cardColor: '#DCE7FF' },
+  { key: 'a', wordKey: 'activity.talk.word.a', emoji: '🔤', cardColor: '#E9E5FF' },
+  { key: 'play', wordKey: 'activity.talk.word.play', emoji: '🎮', cardColor: '#E8FFD8' },
+  { key: 'ride', wordKey: 'activity.talk.word.ride', emoji: '🚲', cardColor: '#FFE0B8' },
+  { key: 'eat', wordKey: 'activity.talk.word.eat', emoji: '🍎', cardColor: '#F9D9BE' },
+  { key: 'bath', wordKey: 'activity.talk.word.bath', emoji: '🛁', cardColor: '#CFEFFF' },
+  { key: 'pee', wordKey: 'activity.talk.word.pee', emoji: '🚽', cardColor: '#FFF2B8' },
+  { key: 'water', wordKey: 'activity.talk.word.water', emoji: '💧', cardColor: '#C2DDF4' },
+  { key: 'fruit', wordKey: 'activity.talk.word.fruit', emoji: '🍓', cardColor: '#FFD9E8' },
+  { key: 'car', wordKey: 'activity.talk.word.car', emoji: '🚗', cardColor: '#D7EBFF' },
+  { key: 'ball', wordKey: 'activity.talk.word.ball', emoji: '⚽', cardColor: '#FFF0CF' },
+  { key: 'more', wordKey: 'activity.talk.word.more', emoji: '✨', cardColor: '#D9CEF4' },
 ];
 
 function titleizeTask(task: string): string {
@@ -356,9 +441,10 @@ function getActivitySteps(taskKey: string, locale: AppLocale): ActivityStep[] {
 }
 
 export default function ActivityDetailScreen({ route, navigation, locale }: ActivityDetailScreenProps) {
-  const { moduleKey, moduleEmoji, taskKey, childName } = route.params;
+  const { moduleKey, moduleEmoji, taskKey, childName, childAge = '' } = route.params;
   const isAlphabet = taskKey === 'alphabet';
   const isNumbers = taskKey === 'numbers';
+  const isMath = taskKey === 'math';
   const isReading = taskKey === 'reading';
   const isShapes = taskKey === 'shapes';
   const isColors = taskKey === 'colors';
@@ -374,6 +460,12 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
   const [selectedReadingLine, setSelectedReadingLine] = useState<string>('');
   const [selectedShapeKey, setSelectedShapeKey] = useState<string>(SHAPE_CHOICES[0].key);
   const [selectedColorKey, setSelectedColorKey] = useState<string>(COLOR_CHOICES[0].key);
+  const [mathDisplay, setMathDisplay] = useState<string>('0');
+  const [mathStoredValue, setMathStoredValue] = useState<number | null>(null);
+  const [mathOperator, setMathOperator] = useState<'+' | '-' | null>(null);
+  const [mathEquation, setMathEquation] = useState<string>('');
+  const [mathWaitingForNext, setMathWaitingForNext] = useState(false);
+  const [activeMathPresets, setActiveMathPresets] = useState<MathProblemPreset[]>(() => shuffleMathPresets(MATH_PROBLEM_PRESETS).slice(0, 3));
   const [selectedEmotion, setSelectedEmotion] = useState<EmotionChoice['key']>('angry');
   const [sentenceWords, setSentenceWords] = useState<string[]>([]);
   const [focusStars, setFocusStars] = useState(0);
@@ -386,6 +478,23 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
     [selectedReadingSentence]
   );
   const currentMoveStep = MOVE_EXERCISE_STEPS[currentMoveStepIndex] || MOVE_EXERCISE_STEPS[0];
+  const safeChildName = childName.trim() || t('setup.defaultChildName');
+  const safeChildAge = childAge.trim() || '___';
+  const readingSentences = useMemo(
+    () =>
+      locale === 'fil'
+        ? [`Ang pangalan ko ay ${safeChildName}.`, `Ako ay ${safeChildAge} taong gulang.`, ...BASE_READING_SENTENCES]
+        : [`My name is ${safeChildName}.`, `I am ${safeChildAge} years old.`, ...BASE_READING_SENTENCES],
+    [locale, safeChildAge, safeChildName]
+  );
+  const mathPresetChips = useMemo(
+    () =>
+      activeMathPresets.map((preset) => ({
+        ...preset,
+        label: locale === 'fil' ? preset.labelFil : preset.labelEn,
+      })),
+    [activeMathPresets, locale]
+  );
 
   useEffect(() => () => stop(), []);
  
@@ -415,6 +524,14 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
     speak(t(currentMoveStep.labelKey), locale);
   }, [currentMoveStep, isMove, locale, moveRunning]);
 
+  useEffect(() => {
+    if (!isMath) {
+      return;
+    }
+
+    setActiveMathPresets(shuffleMathPresets(MATH_PROBLEM_PRESETS).slice(0, 3));
+  }, [isMath]);
+
   const talkTiles = useMemo(
     () =>
       TALK_TILES.map((tile) => ({
@@ -434,6 +551,8 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
         ? t('task.reading')
         : isNumbers
           ? t('task.numbers')
+          : isMath
+            ? t('task.math')
           : isShapes
             ? t('activity.shapes.heading')
             : isColors
@@ -442,7 +561,7 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
                 ? t('activity.focus.heading')
                 : isMove
                   ? t('activity.move.heading')
-      : `${titleizeTask(taskKey)} • ${locale === 'fil' ? 'Visual Schedule' : 'Visual Schedule'}`;
+      : titleizeTask(taskKey);
 
   const toggleStep = (index: number) => {
     const step = steps[index];
@@ -457,6 +576,15 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
   const handleReset = () => {
     if (isNumbers) {
       setSelectedNumber('1');
+      return;
+    }
+
+    if (isMath) {
+      setMathDisplay('0');
+      setMathStoredValue(null);
+      setMathOperator(null);
+      setMathEquation('');
+      setMathWaitingForNext(false);
       return;
     }
 
@@ -516,11 +644,16 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
       return;
     }
 
+    if (isMath) {
+      speak(mathEquation || mathDisplay, 'en');
+      return;
+    }
+
     if (isReading) {
       if (selectedReadingSentence) {
         speak(readingLines.join('. '), 'en');
       } else {
-        speak(READING_SENTENCES.join('. '), 'en');
+        speak(readingSentences.join('. '), 'en');
       }
       return;
     }
@@ -573,6 +706,76 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
   const handleNumberPress = (value: string) => {
     setSelectedNumber(value);
     speak(value, 'en');
+  };
+
+  const applyMath = (left: number, right: number, operator: '+' | '-') => {
+    return operator === '+' ? left + right : left - right;
+  };
+
+  const handleMathDigitPress = (digit: string) => {
+    setMathDisplay((prev) => {
+      if (mathWaitingForNext) {
+        setMathWaitingForNext(false);
+        return digit;
+      }
+      return prev === '0' ? digit : `${prev}${digit}`;
+    });
+  };
+
+  const handleMathOperatorPress = (operator: '+' | '-') => {
+    const currentValue = Number(mathDisplay);
+
+    if (mathStoredValue === null) {
+      setMathStoredValue(currentValue);
+      setMathEquation(`${currentValue} ${operator}`);
+    } else if (mathOperator && !mathWaitingForNext) {
+      const result = applyMath(mathStoredValue, currentValue, mathOperator);
+      setMathStoredValue(result);
+      setMathDisplay(String(result));
+      setMathEquation(`${result} ${operator}`);
+    }
+
+    setMathOperator(operator);
+    setMathWaitingForNext(true);
+  };
+
+  const handleMathEquals = () => {
+    if (mathStoredValue === null || !mathOperator) {
+      speak(mathDisplay, 'en');
+      return;
+    }
+
+    const rightValue = Number(mathDisplay);
+    const result = applyMath(mathStoredValue, rightValue, mathOperator);
+    const nextEquation = `${mathStoredValue} ${mathOperator} ${rightValue} = ${result}`;
+
+    setMathDisplay(String(result));
+    setMathEquation(nextEquation);
+    setMathStoredValue(result);
+    setMathOperator(null);
+    setMathWaitingForNext(true);
+    speak(nextEquation, 'en');
+  };
+
+  const handleMathClear = () => {
+    setMathDisplay('0');
+    setMathStoredValue(null);
+    setMathOperator(null);
+    setMathEquation('');
+    setMathWaitingForNext(false);
+  };
+
+  const handleMathPresetPress = (preset: MathProblemPreset) => {
+    const result = applyMath(preset.a, preset.b, preset.operator);
+    const equation = `${preset.a} ${preset.operator} ${preset.b} = ${result}`;
+    setMathDisplay(String(result));
+    setMathEquation(equation);
+    setMathStoredValue(result);
+    setMathOperator(null);
+    setMathWaitingForNext(true);
+
+    const spokenPrompt = locale === 'fil' ? preset.labelFil : preset.labelEn;
+    speak(`${spokenPrompt}. ${equation}`, locale);
   };
 
   const handleReadingLinePress = (line: string) => {
@@ -685,13 +888,50 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
               ))}
             </ScrollView>
           </View>
+        ) : isMath ? (
+          <View style={styles.mathWrap}>
+            <Text style={styles.mathInstruction}>{t('activity.mathInstruction')}</Text>
+
+            <View style={styles.mathPresetsRow}>
+              {mathPresetChips.map((preset) => (
+                <TouchableOpacity key={preset.key} style={styles.mathPresetChip} onPress={() => handleMathPresetPress(preset)}>
+                  <Text style={styles.mathPresetText}>{preset.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.mathDisplayCard}>
+              <Text style={styles.mathEquationText}>{mathEquation || ' '}</Text>
+              <Text style={styles.mathDisplayText}>{mathDisplay}</Text>
+            </View>
+
+            <View style={styles.mathGrid}>
+              <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('7')}><Text style={styles.mathKeyText}>7</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('8')}><Text style={styles.mathKeyText}>8</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('9')}><Text style={styles.mathKeyText}>9</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.mathKey, styles.mathOperatorKey]} onPress={() => handleMathOperatorPress('+')}><Text style={styles.mathKeyText}>+</Text></TouchableOpacity>
+
+              <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('4')}><Text style={styles.mathKeyText}>4</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('5')}><Text style={styles.mathKeyText}>5</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('6')}><Text style={styles.mathKeyText}>6</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.mathKey, styles.mathOperatorKey]} onPress={() => handleMathOperatorPress('-')}><Text style={styles.mathKeyText}>-</Text></TouchableOpacity>
+
+              <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('1')}><Text style={styles.mathKeyText}>1</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('2')}><Text style={styles.mathKeyText}>2</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('3')}><Text style={styles.mathKeyText}>3</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.mathKey, styles.mathEqualsKey]} onPress={handleMathEquals}><Text style={[styles.mathKeyText, styles.mathEqualsText]}>=</Text></TouchableOpacity>
+
+              <TouchableOpacity style={[styles.mathKey, styles.mathZeroKey]} onPress={() => handleMathDigitPress('0')}><Text style={styles.mathKeyText}>0</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.mathKey, styles.mathClearKey]} onPress={handleMathClear}><Text style={[styles.mathKeyText, styles.mathClearText]}>C</Text></TouchableOpacity>
+            </View>
+          </View>
         ) : isReading ? (
           <View style={styles.readingWrap}>
             {!selectedReadingSentence ? (
               <>
                 <Text style={styles.readingInstruction}>{t('activity.readingListInstruction')}</Text>
                 <ScrollView style={styles.readingLinesScroll} contentContainerStyle={styles.readingLinesList}>
-                  {READING_SENTENCES.map((sentence, index) => (
+                  {readingSentences.map((sentence, index) => (
                     <TouchableOpacity
                       key={`${sentence}-${index}`}
                       style={styles.readingSentenceCard}
@@ -1316,6 +1556,99 @@ const styles = StyleSheet.create({
   },
   readingLineTextActive: {
     color: '#FFFFFF',
+  },
+  mathWrap: {
+    flex: 1,
+  },
+  mathInstruction: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  mathPresetsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 10,
+  },
+  mathPresetChip: {
+    backgroundColor: '#E8F5FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    maxWidth: '100%',
+  },
+  mathPresetText: {
+    color: '#1E3A8A',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  mathDisplayCard: {
+    backgroundColor: '#111827',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 10,
+    minHeight: 88,
+    justifyContent: 'space-between',
+  },
+  mathEquationText: {
+    color: '#93C5FD',
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'right',
+  },
+  mathDisplayText: {
+    color: '#FFFFFF',
+    fontSize: 34,
+    fontWeight: '900',
+    textAlign: 'right',
+  },
+  mathGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 10,
+  },
+  mathKey: {
+    width: '23.5%',
+    minHeight: 68,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mathKeyText: {
+    color: '#111827',
+    fontSize: 26,
+    fontWeight: '900',
+  },
+  mathOperatorKey: {
+    backgroundColor: '#DBEAFE',
+    borderColor: '#93C5FD',
+  },
+  mathEqualsKey: {
+    backgroundColor: '#2563EB',
+    borderColor: '#1D4ED8',
+  },
+  mathEqualsText: {
+    color: '#FFFFFF',
+  },
+  mathZeroKey: {
+    width: '49%',
+  },
+  mathClearKey: {
+    width: '49%',
+    backgroundColor: '#FEE2E2',
+    borderColor: '#FCA5A5',
+  },
+  mathClearText: {
+    color: '#B91C1C',
   },
   talkWrap: {
     flex: 1,

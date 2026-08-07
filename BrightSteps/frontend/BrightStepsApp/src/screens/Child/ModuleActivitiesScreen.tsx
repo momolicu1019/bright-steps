@@ -10,6 +10,7 @@ type ModuleActivitiesScreenProps = {
       moduleKey: string;
       moduleEmoji: string;
       childName: string;
+      childAge?: string;
     };
   };
   navigation: {
@@ -34,7 +35,7 @@ function getTaskLabel(task: string): string {
 }
 
 export default function ModuleActivitiesScreen({ route, navigation, locale }: ModuleActivitiesScreenProps) {
-  const { moduleKey, moduleEmoji, childName } = route.params;
+  const { moduleKey, moduleEmoji, childName, childAge } = route.params;
   const moduleData = MODULES.find((moduleItem) => moduleItem.key === moduleKey);
 
   useEffect(() => () => stop(), []);
@@ -69,6 +70,7 @@ export default function ModuleActivitiesScreen({ route, navigation, locale }: Mo
                 moduleEmoji,
                 taskKey: task,
                 childName,
+                childAge,
               });
             }}
           >

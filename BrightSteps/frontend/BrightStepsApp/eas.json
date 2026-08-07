@@ -11,8 +11,7 @@
       "android": { "buildType": "apk" }
     },
     "production": {
-      "android": { "buildType": "apk" },
-      "ios": { "buildType": "ipa" }
+      "android": { "buildType": "apk" }
     }
   },
   "submit": {

@@ -3,12 +3,14 @@ import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import ChildHomeScreen from './src/screens/Child/ChildHomeScreen';
 import ParentDashboardScreen from './src/screens/Parent/ParentDashboardScreen';
 import { AppLocale, setLocale, t } from './src/i18n';
 
 const ModuleActivitiesScreen = require('./src/screens/Child/ModuleActivitiesScreen').default;
 const ActivityDetailScreen = require('./src/screens/Child/ActivityDetailScreen').default;
+const PROFILE_STORAGE_KEY = 'brightsteps.childProfile';
 
 const ChildStack = createNativeStackNavigator();
 
@@ -38,10 +40,11 @@ type RoleView = 'child' | 'parent';
 
 export default function App(){
   const [childNameInput, setChildNameInput] = useState('');
-  const [childAgeInput, setChildAgeInput] = useState('5');
+  const [childAgeInput, setChildAgeInput] = useState('');
   const [childName, setChildName] = useState('');
-  const [childAge, setChildAge] = useState('5');
+  const [childAge, setChildAge] = useState('');
   const [profileReady, setProfileReady] = useState(false);
+  const [bootstrapped, setBootstrapped] = useState(false);
   const [locale, setAppLocale] = useState<AppLocale>('en');
   const [selectedRole, setSelectedRole] = useState<RoleView>('child');
 
@@ -49,15 +52,54 @@ export default function App(){
     setLocale(locale);
   }, [locale]);
 
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const saved = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
+        if (!saved) {
+          return;
+        }
+
+        const parsed = JSON.parse(saved) as { childName?: string; childAge?: string };
+        const storedName = (parsed.childName || '').trim();
+        const storedAge = (parsed.childAge || '').trim();
+
+        if (storedName) {
+          setChildName(storedName);
+          setChildAge(storedAge);
+          setProfileReady(true);
+        }
+      } catch {
+        // Ignore invalid persisted data and continue with setup flow.
+      } finally {
+        setBootstrapped(true);
+      }
+    };
+
+    loadProfile();
+  }, []);
+
   const toggleLanguage = () => {
     setAppLocale((current) => (current === 'en' ? 'fil' : 'en'));
   };
 
   const startApp = () => {
     const trimmed = childNameInput.trim();
-    setChildName(trimmed || t('setup.defaultChildName'));
-    setChildAge(childAgeInput.trim() || '5');
+    const nextName = trimmed || t('setup.defaultChildName');
+    const nextAge = childAgeInput.trim();
+    setChildName(nextName);
+    setChildAge(nextAge);
     setProfileReady(true);
+
+    AsyncStorage.setItem(
+      PROFILE_STORAGE_KEY,
+      JSON.stringify({
+        childName: nextName,
+        childAge: nextAge,
+      })
+    ).catch(() => {
+      // Keep app usable even if storage write fails.
+    });
   };
 
   const beginEditChildProfile = () => {
@@ -65,6 +107,14 @@ export default function App(){
     setChildAgeInput(childAge);
     setProfileReady(false);
   };
+
+  if (!bootstrapped) {
+    return (
+      <NavigationContainer>
+        <View style={styles.setupContainer} />
+      </NavigationContainer>
+    );
+  }
 
   if (!profileReady) {
     return (

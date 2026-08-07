@@ -4,7 +4,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-nati
 import { useNavigation } from '@react-navigation/native';
 import { speak } from '../../services/tts';
 import { AppLocale, t } from '../../i18n';
-import { CHILD_ACCESSIBILITY_ITEMS, CHILD_MODULE_TILES } from '../../constants/prototypeContent';
+import { CHILD_MODULE_TILES } from '../../constants/prototypeContent';
 
 type ChildHomeScreenProps = {
   childName: string;
@@ -26,7 +26,7 @@ export default function ChildHomeScreen({ childName, childAge, locale }: ChildHo
         <View style={styles.headerTop}>
           <View>
             <Text style={styles.title}>{t('child.greeting', { name: childName })}</Text>
-            <Text style={styles.ageTag}>{childAge} yrs</Text>
+            {!!childAge && <Text style={styles.ageTag}>{childAge} yrs</Text>}
             <Text style={styles.prompt}>{t('child.learnPrompt')}</Text>
           </View>
           <Text style={styles.localeTag}>{locale.toUpperCase()}</Text>
@@ -92,15 +92,6 @@ export default function ChildHomeScreen({ childName, childAge, locale }: ChildHo
         ))}
       </View>
 
-      <View style={styles.a11yRow}>
-        <Text style={styles.a11yTitle}>ACCESSIBILITY</Text>
-        {CHILD_ACCESSIBILITY_ITEMS.map((item) => (
-          <Text key={`${item.prefix}-${item.labelKey}`} style={styles.a11yChip}>
-            {item.prefix} {t(item.labelKey)} {item.statusKey ? t(item.statusKey) : ''}
-          </Text>
-        ))}
-      </View>
-
       <View style={styles.petCard}>
         <Text style={styles.petText}>{t('child.petMessage')}</Text>
       </View>
@@ -130,9 +121,6 @@ const styles=StyleSheet.create({
   tileArrow:{fontSize:18, fontWeight:'900', color:'#374151'},
   tileTitle:{fontSize:16, fontWeight:'900', color:'#111827', marginTop:8},
   tileSubtitle:{fontSize:12, color:'#4B5563', marginTop:4, fontWeight:'600'},
-  a11yRow:{marginTop:6, marginBottom:8, padding:10, backgroundColor:'#FFFFFF', borderRadius:14, borderWidth:1, borderColor:'#E8EAF5', flexDirection:'row', flexWrap:'wrap', gap:8},
-  a11yTitle:{width:'100%', fontSize:11, fontWeight:'900', color:'#6B7280', letterSpacing:1},
-  a11yChip:{fontSize:11, fontWeight:'700', color:'#374151', backgroundColor:'#F3F4F6', paddingHorizontal:8, paddingVertical:6, borderRadius:999},
   petCard:{backgroundColor:'#FFFDF2', padding:14, borderRadius:16, marginTop:8, borderWidth:1, borderColor:'#FDE68A'},
   petText:{fontSize:18, fontWeight:'700', color:'#78350F'}
 })

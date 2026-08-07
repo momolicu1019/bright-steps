@@ -38,12 +38,47 @@ type TalkTile = {
   isChildName?: boolean;
 };
 
+type ShapeChoice = {
+  key: string;
+  nameKey: string;
+  colorKey: string;
+  colorHex: string;
+  glyph: string;
+};
+
+type ColorChoice = {
+  key: string;
+  nameKey: string;
+  hex: string;
+  textColor?: string;
+};
+
 const ALPHABET_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const NUMBER_TILES = Array.from({ length: 50 }, (_, index) => `${index + 1}`);
+const READING_LINES = ['The', 'The cat', 'The cat sat', 'The cat sat on', 'The cat sat on the mat.'];
 const EMOTION_CHOICES: EmotionChoice[] = [
   { key: 'happy', emoji: '😊', cardColor: '#FFEDB0' },
   { key: 'sad', emoji: '😢', cardColor: '#C2DDF4' },
   { key: 'angry', emoji: '😡', cardColor: '#F5C8DA' },
   { key: 'scared', emoji: '😨', cardColor: '#D9CEF4' },
+];
+
+const SHAPE_CHOICES: ShapeChoice[] = [
+  { key: 'circle', nameKey: 'activity.shape.circle', colorKey: 'activity.color.red', colorHex: '#EF4444', glyph: '●' },
+  { key: 'square', nameKey: 'activity.shape.square', colorKey: 'activity.color.blue', colorHex: '#3B82F6', glyph: '■' },
+  { key: 'triangle', nameKey: 'activity.shape.triangle', colorKey: 'activity.color.yellow', colorHex: '#F59E0B', glyph: '▲' },
+  { key: 'star', nameKey: 'activity.shape.star', colorKey: 'activity.color.green', colorHex: '#10B981', glyph: '★' },
+  { key: 'diamond', nameKey: 'activity.shape.diamond', colorKey: 'activity.color.purple', colorHex: '#8B5CF6', glyph: '◆' },
+  { key: 'rectangle', nameKey: 'activity.shape.rectangle', colorKey: 'activity.color.orange', colorHex: '#F97316', glyph: '▬' },
+];
+
+const COLOR_CHOICES: ColorChoice[] = [
+  { key: 'red', nameKey: 'activity.color.red', hex: '#EF4444' },
+  { key: 'yellow', nameKey: 'activity.color.yellow', hex: '#FACC15', textColor: '#1F2937' },
+  { key: 'blue', nameKey: 'activity.color.blue', hex: '#3B82F6' },
+  { key: 'green', nameKey: 'activity.color.green', hex: '#10B981' },
+  { key: 'orange', nameKey: 'activity.color.orange', hex: '#F97316' },
+  { key: 'purple', nameKey: 'activity.color.purple', hex: '#8B5CF6' },
 ];
 
 const TALK_TILES: TalkTile[] = [
@@ -68,19 +103,69 @@ function titleizeTask(task: string): string {
 }
 
 function getActivitySteps(taskKey: string, locale: AppLocale): ActivityStep[] {
-  if (taskKey === 'brushing') {
+  if (taskKey === 'morning_routine') {
     if (locale === 'fil') {
       return [
-        { icon: '🪥', title: 'Kunin ang sipilyo', subtitle: 'Hawakan sa kamay' },
-        { icon: '🧴', title: 'Lagyan ng toothpaste', subtitle: 'Kasukat ng gisantes' },
-        { icon: '😁', title: 'Magsipilyo nang 2 minuto', subtitle: 'Pataas, pababa, paikot!' },
+        { icon: '🌞', title: 'Gumising', subtitle: 'Simulan ang araw nang maayos' },
+        { icon: '🛏️', title: 'Ayusin ang kama', subtitle: 'Iunat at itupi ang kumot' },
+        { icon: '🧼', title: 'Maghilamos', subtitle: 'Hugasan ang mukha nang malinis' },
       ];
     }
 
     return [
-      { icon: '🪥', title: 'Get toothbrush', subtitle: 'Hold with your hand' },
-      { icon: '🧴', title: 'Add toothpaste', subtitle: 'Pea-sized amount' },
-      { icon: '😁', title: 'Brush for 2 minutes', subtitle: 'Up, down, all around!' },
+      { icon: '🌞', title: 'Wake up', subtitle: 'Start your day calmly' },
+      { icon: '🛏️', title: 'Clean bed', subtitle: 'Fix and tidy your blanket' },
+      { icon: '🧼', title: 'Wash your face', subtitle: 'Wash gently and dry your face' },
+    ];
+  }
+
+  if (taskKey === 'toilet') {
+    if (locale === 'fil') {
+      return [
+        { icon: '🚻', title: 'Pumunta sa CR', subtitle: 'Lumapit nang maingat' },
+        { icon: '🚽', title: 'Buksan ang takip ng inidoro', subtitle: 'Iangat ang toilet cover' },
+        { icon: '💧', title: 'Umihi', subtitle: 'Dahan-dahan at malinis' },
+      ];
+    }
+
+    return [
+      { icon: '🚻', title: 'Go to the CR', subtitle: 'Walk safely to the restroom' },
+      { icon: '🚽', title: 'Open the toilet bowl', subtitle: 'Lift the toilet cover' },
+      { icon: '💧', title: 'Take a pee', subtitle: 'Take your time and stay clean' },
+    ];
+  }
+
+  if (taskKey === 'dressing') {
+    if (locale === 'fil') {
+      return [
+        { icon: '🩲', title: 'Magsuot ng underwear', subtitle: 'Simulan sa damit panloob' },
+        { icon: '👕', title: 'Magsuot ng shirt', subtitle: 'Ipasok ang dalawang braso' },
+        { icon: '🩳', title: 'Magsuot ng short', subtitle: 'Itaas nang maayos' },
+        { icon: '🧦', title: 'Magsuot ng medyas', subtitle: 'Isa-isa hanggang sakong' },
+      ];
+    }
+
+    return [
+      { icon: '🩲', title: 'Wear your under wear', subtitle: 'Start with your underwear' },
+      { icon: '👕', title: 'Wear your shirt', subtitle: 'Put both arms through' },
+      { icon: '🩳', title: 'Wear your short', subtitle: 'Pull it up properly' },
+      { icon: '🧦', title: 'Wear your socks', subtitle: 'One sock at a time' },
+    ];
+  }
+
+  if (taskKey === 'eating') {
+    if (locale === 'fil') {
+      return [
+        { icon: '🪑', title: 'Umupo', subtitle: 'Umupo nang maayos sa mesa' },
+        { icon: '🍽️', title: 'Kumain ng pagkain', subtitle: 'Ngumuya nang dahan-dahan' },
+        { icon: '💧', title: 'Uminom ng tubig', subtitle: 'Uminom pagkatapos kumain' },
+      ];
+    }
+
+    return [
+      { icon: '🪑', title: 'Sit down', subtitle: 'Sit properly at the table' },
+      { icon: '🍽️', title: 'Eat your food', subtitle: 'Chew slowly and carefully' },
+      { icon: '💧', title: 'Drink water', subtitle: 'Take water after eating' },
     ];
   }
 
@@ -102,11 +187,19 @@ function getActivitySteps(taskKey: string, locale: AppLocale): ActivityStep[] {
 export default function ActivityDetailScreen({ route, navigation, locale }: ActivityDetailScreenProps) {
   const { moduleKey, moduleEmoji, taskKey, childName } = route.params;
   const isAlphabet = taskKey === 'alphabet';
+  const isNumbers = taskKey === 'numbers';
+  const isReading = taskKey === 'reading';
+  const isShapes = taskKey === 'shapes';
+  const isColors = taskKey === 'colors';
   const isEmotions = taskKey === 'emotions';
   const isTalk = taskKey === 'aac' && moduleKey === 'speech';
   const steps = useMemo(() => getActivitySteps(taskKey, locale), [taskKey, locale]);
   const [completed, setCompleted] = useState<boolean[]>(new Array(steps.length).fill(false));
   const [selectedLetter, setSelectedLetter] = useState<string>('A');
+  const [selectedNumber, setSelectedNumber] = useState<string>('1');
+  const [selectedReadingLine, setSelectedReadingLine] = useState<string>(READING_LINES[0]);
+  const [selectedShapeKey, setSelectedShapeKey] = useState<string>(SHAPE_CHOICES[0].key);
+  const [selectedColorKey, setSelectedColorKey] = useState<string>(COLOR_CHOICES[0].key);
   const [selectedEmotion, setSelectedEmotion] = useState<EmotionChoice['key']>('angry');
   const [sentenceWords, setSentenceWords] = useState<string[]>([]);
 
@@ -123,13 +216,47 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
     ? t('activity.feelingsQuestion')
     : isTalk
       ? t('activity.talk.heading')
+      : isReading
+        ? t('activity.reading.heading')
+        : isNumbers
+          ? t('activity.numbers.heading')
+          : isShapes
+            ? t('activity.shapes.heading')
+            : isColors
+              ? t('activity.colors.heading')
       : `${titleizeTask(taskKey)} • ${locale === 'fil' ? 'Visual Schedule' : 'Visual Schedule'}`;
 
   const toggleStep = (index: number) => {
-    setCompleted((prev) => prev.map((value, idx) => (idx === index ? !value : value)));
+    const step = steps[index];
+    setCompleted((prev) => {
+      const nextValue = !prev[index];
+      const statusText = nextValue ? t('activity.checked') : t('activity.unchecked');
+      speak(`${step.title}. ${statusText}`, locale);
+      return prev.map((value, idx) => (idx === index ? nextValue : value));
+    });
   };
 
   const handleReset = () => {
+    if (isNumbers) {
+      setSelectedNumber('1');
+      return;
+    }
+
+    if (isReading) {
+      setSelectedReadingLine(READING_LINES[0]);
+      return;
+    }
+
+    if (isShapes) {
+      setSelectedShapeKey(SHAPE_CHOICES[0].key);
+      return;
+    }
+
+    if (isColors) {
+      setSelectedColorKey(COLOR_CHOICES[0].key);
+      return;
+    }
+
     if (isTalk) {
       setSentenceWords([]);
       return;
@@ -145,6 +272,28 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
   const handleReadAloud = () => {
     if (isAlphabet) {
       speak(ALPHABET_LETTERS.join(' '), 'en');
+      return;
+    }
+
+    if (isNumbers) {
+      speak(NUMBER_TILES.join(', '), 'en');
+      return;
+    }
+
+    if (isReading) {
+      speak(READING_LINES.join('. '), 'en');
+      return;
+    }
+
+    if (isShapes) {
+      const selectedShape = SHAPE_CHOICES.find((shape) => shape.key === selectedShapeKey) || SHAPE_CHOICES[0];
+      speak(`${t(selectedShape.nameKey)} ${t('activity.word.color')} ${t(selectedShape.colorKey)}`, locale);
+      return;
+    }
+
+    if (isColors) {
+      const selectedColor = COLOR_CHOICES.find((color) => color.key === selectedColorKey) || COLOR_CHOICES[0];
+      speak(t(selectedColor.nameKey), locale);
       return;
     }
 
@@ -169,6 +318,26 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
   const handleLetterPress = (letter: string) => {
     setSelectedLetter(letter);
     speak(letter, 'en');
+  };
+
+  const handleNumberPress = (value: string) => {
+    setSelectedNumber(value);
+    speak(value, 'en');
+  };
+
+  const handleReadingLinePress = (line: string) => {
+    setSelectedReadingLine(line);
+    speak(line, 'en');
+  };
+
+  const handleShapePress = (shape: ShapeChoice) => {
+    setSelectedShapeKey(shape.key);
+    speak(`${t(shape.nameKey)} ${t('activity.word.color')} ${t(shape.colorKey)}`, locale);
+  };
+
+  const handleColorPress = (choice: ColorChoice) => {
+    setSelectedColorKey(choice.key);
+    speak(t(choice.nameKey), locale);
   };
 
   const handleEmotionPress = (emotionKey: EmotionChoice['key']) => {
@@ -204,7 +373,7 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
           </TouchableOpacity>
         </View>
 
-        <Text style={[styles.heading, isTalk && styles.talkHeading]}>{taskHeading}</Text>
+        <Text style={[styles.heading, isTalk && styles.talkHeading, isReading && styles.readingHeading]}>{taskHeading}</Text>
 
         {isAlphabet ? (
           <View style={styles.alphabetWrap}>
@@ -226,6 +395,85 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
                   </Text>
                 </TouchableOpacity>
               ))}
+            </ScrollView>
+          </View>
+        ) : isNumbers ? (
+          <View style={styles.alphabetWrap}>
+            <Text style={styles.alphabetInstruction}>{t('activity.numbersInstruction')}</Text>
+            <View style={styles.selectedLetterCard}>
+              <Text style={styles.selectedLetter}>{selectedNumber}</Text>
+              <Text style={styles.selectedLetterSub}>{t('activity.tapNumberPrompt')}</Text>
+            </View>
+
+            <ScrollView style={styles.lettersScroll} contentContainerStyle={styles.numbersGrid}>
+              {NUMBER_TILES.map((value) => (
+                <TouchableOpacity
+                  key={value}
+                  style={[styles.numberTile, selectedNumber === value && styles.letterTileActive]}
+                  onPress={() => handleNumberPress(value)}
+                >
+                  <Text style={[styles.numberTileText, selectedNumber === value && styles.letterTileTextActive]}>
+                    {value}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        ) : isReading ? (
+          <View style={styles.readingWrap}>
+            <Text style={styles.readingInstruction}>{t('activity.readingInstruction')}</Text>
+            <View style={styles.selectedReadingCard}>
+              <Text style={styles.selectedReadingLine}>{selectedReadingLine}</Text>
+            </View>
+            <ScrollView style={styles.readingLinesScroll} contentContainerStyle={styles.readingLinesList}>
+              {READING_LINES.map((line, index) => (
+                <TouchableOpacity
+                  key={`${line}-${index}`}
+                  style={[styles.readingLineCard, selectedReadingLine === line && styles.readingLineCardActive]}
+                  onPress={() => handleReadingLinePress(line)}
+                >
+                  <Text style={[styles.readingLineText, selectedReadingLine === line && styles.readingLineTextActive]}>{line}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        ) : isShapes ? (
+          <View style={styles.shapeWrap}>
+            <Text style={styles.shapeInstruction}>{t('activity.shapesInstruction')}</Text>
+            <ScrollView contentContainerStyle={styles.shapeGrid}>
+              {SHAPE_CHOICES.map((shape) => (
+                <TouchableOpacity
+                  key={shape.key}
+                  style={[styles.shapeCard, selectedShapeKey === shape.key && styles.shapeCardActive]}
+                  onPress={() => handleShapePress(shape)}
+                >
+                  <Text style={[styles.shapeGlyph, { color: shape.colorHex }]}>{shape.glyph}</Text>
+                  <Text style={styles.shapeName}>{t(shape.nameKey)}</Text>
+                  <Text style={styles.shapeColorName}>{t(shape.colorKey)}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        ) : isColors ? (
+          <View style={styles.colorWrap}>
+            <Text style={styles.shapeInstruction}>{t('activity.colorsInstruction')}</Text>
+            <ScrollView contentContainerStyle={styles.shapeGrid}>
+              {COLOR_CHOICES.map((choice) => {
+                const isActive = selectedColorKey === choice.key;
+                return (
+                  <TouchableOpacity
+                    key={choice.key}
+                    style={[
+                      styles.colorCard,
+                      { backgroundColor: choice.hex },
+                      isActive && styles.shapeCardActive,
+                    ]}
+                    onPress={() => handleColorPress(choice)}
+                  >
+                    <Text style={[styles.colorCardLabel, { color: choice.textColor || '#FFFFFF' }]}>{t(choice.nameKey)}</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </ScrollView>
           </View>
         ) : isEmotions ? (
@@ -366,17 +614,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   closeButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
   },
   closeButtonText: {
     color: '#FFFFFF',
-    fontSize: 32,
-    lineHeight: 34,
+    fontSize: 24,
+    lineHeight: 26,
     fontWeight: '400',
   },
   heading: {
@@ -391,8 +639,60 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 14,
   },
+  readingHeading: {
+    fontSize: 24,
+  },
   stepsWrap: {
     flex: 1,
+  },
+  readingWrap: {
+    flex: 1,
+  },
+  readingInstruction: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  selectedReadingCard: {
+    backgroundColor: '#EEF2FF',
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+    marginBottom: 10,
+  },
+  selectedReadingLine: {
+    fontSize: 22,
+    color: '#1E3A8A',
+    fontWeight: '900',
+  },
+  readingLinesScroll: {
+    flex: 1,
+  },
+  readingLinesList: {
+    paddingBottom: 8,
+  },
+  readingLineCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    marginBottom: 8,
+  },
+  readingLineCardActive: {
+    backgroundColor: '#1D4ED8',
+    borderColor: '#1D4ED8',
+  },
+  readingLineText: {
+    fontSize: 18,
+    color: '#0F172A',
+    fontWeight: '800',
+  },
+  readingLineTextActive: {
+    color: '#FFFFFF',
   },
   talkWrap: {
     flex: 1,
@@ -525,6 +825,70 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 8,
   },
+  shapeInstruction: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  shapeWrap: {
+    flex: 1,
+  },
+  colorWrap: {
+    flex: 1,
+  },
+  shapeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 10,
+    paddingBottom: 10,
+  },
+  shapeCard: {
+    width: '48.5%',
+    minHeight: 140,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+  },
+  shapeCardActive: {
+    borderColor: '#1D4ED8',
+    borderWidth: 3,
+  },
+  shapeGlyph: {
+    fontSize: 48,
+  },
+  shapeName: {
+    marginTop: 8,
+    fontSize: 16,
+    color: '#0F172A',
+    fontWeight: '900',
+  },
+  shapeColorName: {
+    fontSize: 13,
+    color: '#4B5563',
+    fontWeight: '700',
+    marginTop: 3,
+  },
+  colorCard: {
+    width: '48.5%',
+    minHeight: 100,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+  },
+  colorCardLabel: {
+    fontSize: 18,
+    fontWeight: '900',
+    textTransform: 'capitalize',
+  },
   selectedLetterCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
@@ -553,6 +917,12 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingBottom: 12,
   },
+  numbersGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingBottom: 14,
+  },
   letterTile: {
     width: '15.5%',
     minWidth: 48,
@@ -575,6 +945,22 @@ const styles = StyleSheet.create({
   },
   letterTileTextActive: {
     color: '#FFFFFF',
+  },
+  numberTile: {
+    width: '18.3%',
+    minWidth: 52,
+    height: 54,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  numberTileText: {
+    color: '#111827',
+    fontWeight: '900',
+    fontSize: 19,
   },
   stepsContent: {
     paddingBottom: 12,
@@ -608,20 +994,20 @@ const styles = StyleSheet.create({
     fontSize: 26,
   },
   stepTitle: {
-    fontSize: 18,
+    fontSize: 15,
     color: '#111827',
     fontWeight: '900',
   },
   stepSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
     marginTop: 2,
     fontWeight: '700',
   },
   statusCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     borderWidth: 2,
     borderColor: '#D1D5DB',
     alignItems: 'center',
@@ -633,10 +1019,10 @@ const styles = StyleSheet.create({
     borderColor: '#111827',
   },
   statusCircleText: {
-    fontSize: 22,
+    fontSize: 18,
     color: '#FFFFFF',
     fontWeight: '900',
-    lineHeight: 32,
+    lineHeight: 24,
   },
   bottomActions: {
     flexDirection: 'row',

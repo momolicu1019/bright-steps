@@ -24,6 +24,14 @@ function titleizeTask(task: string): string {
     .join(' ');
 }
 
+function getTaskLabel(task: string): string {
+  const translated = t(`task.${task}`);
+  if (translated.toLowerCase().includes('translation missing')) {
+    return titleizeTask(task);
+  }
+  return translated;
+}
+
 export default function ModuleActivitiesScreen({ route, navigation, locale }: ModuleActivitiesScreenProps) {
   const { moduleKey, moduleEmoji, childName } = route.params;
   const moduleData = MODULES.find((moduleItem) => moduleItem.key === moduleKey);
@@ -61,7 +69,7 @@ export default function ModuleActivitiesScreen({ route, navigation, locale }: Mo
             }
           >
             <Text style={styles.cardTitle}>
-              {index + 1}. {titleizeTask(task)}
+              {index + 1}. {getTaskLabel(task)}
             </Text>
             <Text style={styles.cardText}>Tap to open activity ↗</Text>
           </TouchableOpacity>
@@ -111,13 +119,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
     color: '#233266',
     marginBottom: 4,
   },
   cardText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#4E5C87',
   },
 });

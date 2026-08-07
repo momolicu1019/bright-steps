@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppLocale, t } from '../../i18n';
-import { speak } from '../../services/tts';
+import { speak, stop } from '../../services/tts';
 
 type ActivityDetailScreenProps = {
   route: {
@@ -130,6 +130,7 @@ const MOVE_EXERCISE_STEPS: MoveExerciseStep[] = [
 ];
 
 const FOCUS_BOARD_HEIGHT = 430;
+const MOVE_STEP_MS = 1800;
 const FOCUS_BUBBLE_COLORS = ['#7CC8FF', '#8B9CFF', '#95D5FF', '#A7B8FF', '#8DD7FF'];
 
 function createFocusBubble(id: number): FocusBubble {
@@ -191,13 +192,17 @@ function FocusBubbleItem({ bubble, onPop }: { bubble: FocusBubble; onPop: (id: n
   );
 }
 
-function MoveExerciseKid({ currentStepKey }: { currentStepKey: string }) {
+function MoveExerciseKid({ currentStepKey, isRunning }: { currentStepKey: string; isRunning: boolean }) {
   const headBob = useRef(new Animated.Value(0)).current;
   const armLift = useRef(new Animated.Value(0)).current;
   const torsoDip = useRef(new Animated.Value(0)).current;
   const legBend = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    if (!isRunning) {
+      return;
+    }
+
     const animation = Animated.loop(
       Animated.sequence([
         Animated.parallel([
@@ -217,7 +222,7 @@ function MoveExerciseKid({ currentStepKey }: { currentStepKey: string }) {
 
     animation.start();
     return () => animation.stop();
-  }, [armLift, headBob, legBend, torsoDip]);
+  }, [armLift, headBob, isRunning, legBend, torsoDip]);
 
   const headTranslateY = headBob.interpolate({ inputRange: [0, 1], outputRange: [0, currentStepKey === 'head' ? -8 : -3] });
   const armRotate = armLift.interpolate({ inputRange: [0, 1], outputRange: ['0deg', currentStepKey === 'arms' || currentStepKey === 'shoulders' ? '-40deg' : '-14deg'] });
@@ -374,23 +379,41 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
   const [focusStars, setFocusStars] = useState(0);
   const [focusBubbles, setFocusBubbles] = useState<FocusBubble[]>(() => Array.from({ length: 6 }, (_, index) => createFocusBubble(index + 1)));
   const [currentMoveStepIndex, setCurrentMoveStepIndex] = useState(0);
+  const [moveRunning, setMoveRunning] = useState(true);
+  const [moveCycles, setMoveCycles] = useState(0);
   const readingLines = useMemo(
     () => (selectedReadingSentence ? buildReadingPyramid(selectedReadingSentence) : []),
     [selectedReadingSentence]
   );
   const currentMoveStep = MOVE_EXERCISE_STEPS[currentMoveStepIndex] || MOVE_EXERCISE_STEPS[0];
+
+  useEffect(() => () => stop(), []);
  
   useEffect(() => {
-    if (!isMove) {
+    if (!isMove || !moveRunning) {
       return;
     }
  
     const timer = setInterval(() => {
-      setCurrentMoveStepIndex((prev) => (prev + 1) % MOVE_EXERCISE_STEPS.length);
-    }, 2200);
+      setCurrentMoveStepIndex((prev) => {
+        const next = (prev + 1) % MOVE_EXERCISE_STEPS.length;
+        if (next === 0) {
+          setMoveCycles((cycles) => cycles + 1);
+        }
+        return next;
+      });
+    }, MOVE_STEP_MS);
  
     return () => clearInterval(timer);
-  }, [isMove]);
+  }, [isMove, moveRunning]);
+
+  useEffect(() => {
+    if (!isMove || !moveRunning) {
+      return;
+    }
+
+    speak(t(currentMoveStep.labelKey), locale);
+  }, [currentMoveStep, isMove, locale, moveRunning]);
 
   const talkTiles = useMemo(
     () =>
@@ -463,6 +486,8 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
  
     if (isMove) {
       setCurrentMoveStepIndex(0);
+      setMoveCycles(0);
+      setMoveRunning(true);
       return;
     }
 
@@ -608,12 +633,11 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
               <Text style={styles.childText}>{t('common.forChild', { name: childName })}</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.closeButton} onPress={navigation.goBack}>
-            <Text style={styles.closeButtonText}>×</Text>
-          </TouchableOpacity>
         </View>
 
-        <Text style={[styles.heading, isTalk && styles.talkHeading, isReading && styles.readingHeading, isFocus && styles.focusHeading]}>{taskHeading}</Text>
+        {!isFocus && !isMove && (
+          <Text style={[styles.heading, isTalk && styles.talkHeading, isReading && styles.readingHeading, isFocus && styles.focusHeading]}>{taskHeading}</Text>
+        )}
 
         {isAlphabet ? (
           <View style={styles.alphabetWrap}>
@@ -762,16 +786,25 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
           </View>
         ) : isMove ? (
           <View style={styles.moveWrap}>
-            <Text style={styles.movePrompt}>{t('activity.move.prompt')}</Text>
+            <View style={styles.moveTopRow}>
+              <Text style={styles.movePrompt}>{t('activity.move.prompt')}</Text>
+              <View style={styles.moveCyclesBadge}>
+                <Text style={styles.moveCyclesText}>{moveCycles} ⭐</Text>
+              </View>
+            </View>
  
             <View style={styles.moveStageCard}>
-              <MoveExerciseKid currentStepKey={currentMoveStep.key} />
+              <MoveExerciseKid currentStepKey={currentMoveStep.key} isRunning={moveRunning} />
             </View>
  
             <View style={styles.moveCurrentStepCard}>
               <Text style={styles.moveCurrentStepEmoji}>{currentMoveStep.emoji}</Text>
               <Text style={styles.moveCurrentStepText}>{t(currentMoveStep.labelKey)}</Text>
             </View>
+
+            <TouchableOpacity style={styles.movePlayPauseBtn} onPress={() => setMoveRunning((running) => !running)}>
+              <Text style={styles.movePlayPauseText}>{moveRunning ? t('activity.move.pause') : t('activity.move.start')}</Text>
+            </TouchableOpacity>
  
             <View style={styles.moveStepsList}>
               {MOVE_EXERCISE_STEPS.map((step, index) => (
@@ -911,29 +944,17 @@ const styles = StyleSheet.create({
     fontSize: 40,
   },
   moduleTitle: {
-    fontSize: 36,
+    fontSize: 28,
+    lineHeight: 32,
     fontWeight: '900',
     color: '#0F172A',
+    flexShrink: 1,
   },
   moduleSubtitle: {
     marginTop: 2,
     fontSize: 16,
     color: '#6B7280',
     fontWeight: '700',
-  },
-  closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#000000',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 22,
-    lineHeight: 24,
-    fontWeight: '400',
   },
   heading: {
     marginTop: 22,
@@ -953,13 +974,31 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   moveWrap: {
-    flex: 1,
+    flexGrow: 0,
+  },
+  moveTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
   },
   movePrompt: {
-    fontSize: 17,
+    fontSize: 16,
     color: '#6B6661',
     fontWeight: '800',
-    marginBottom: 10,
+    flexShrink: 1,
+    marginRight: 10,
+  },
+  moveCyclesBadge: {
+    backgroundColor: '#111111',
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  moveCyclesText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '900',
   },
   moveStageCard: {
     backgroundColor: '#E9F8FF',
@@ -967,7 +1006,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D5ECFA',
     padding: 18,
-    minHeight: 320,
+    height: 320,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1056,6 +1095,19 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '900',
   },
+  movePlayPauseBtn: {
+    marginTop: 10,
+    backgroundColor: '#111827',
+    borderRadius: 999,
+    alignSelf: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  movePlayPauseText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '900',
+  },
   moveStepsList: {
     marginTop: 12,
     flexDirection: 'row',
@@ -1093,7 +1145,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   focusWrap: {
-    flex: 1,
+    flexGrow: 0,
   },
   focusTopRow: {
     flexDirection: 'row',
@@ -1118,14 +1170,13 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   focusBoard: {
-    flex: 1,
     position: 'relative',
     overflow: 'hidden',
     backgroundColor: '#D7EBFB',
     borderRadius: 28,
     borderWidth: 1,
     borderColor: '#E0ECF7',
-    minHeight: FOCUS_BOARD_HEIGHT,
+    height: FOCUS_BOARD_HEIGHT,
   },
   focusBubbleHitbox: {
     position: 'absolute',

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ChildHomeScreen from './src/screens/Child/ChildHomeScreen';
 import ParentDashboardScreen from './src/screens/Parent/ParentDashboardScreen';
@@ -47,10 +47,9 @@ export default function App(){
   const [bootstrapped, setBootstrapped] = useState(false);
   const [locale, setAppLocale] = useState<AppLocale>('en');
   const [selectedRole, setSelectedRole] = useState<RoleView>('child');
+  const [showAppInfoModal, setShowAppInfoModal] = useState(false);
 
-  useEffect(() => {
-    setLocale(locale);
-  }, [locale]);
+  setLocale(locale);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -154,7 +153,7 @@ export default function App(){
     <NavigationContainer>
       <View style={styles.shell}>
         <View style={styles.brandRow}>
-          <View style={styles.brandLeft}>
+          <TouchableOpacity style={styles.brandLeft} activeOpacity={0.85} onPress={() => setShowAppInfoModal(true)}>
             <View style={styles.brandBadge}>
               <Text style={styles.brandBadgeText}>B</Text>
             </View>
@@ -162,7 +161,7 @@ export default function App(){
               <Text style={styles.brandName}>BrightSteps</Text>
               <Text style={styles.brandSub}>AI Learning • {locale.toUpperCase()}</Text>
             </View>
-          </View>
+          </TouchableOpacity>
           <View style={styles.langGroup}>
             <TouchableOpacity style={[styles.langBtn, locale === 'en' && styles.langBtnActive]} onPress={() => setAppLocale('en')}>
               <Text style={[styles.langBtnText, locale === 'en' && styles.langBtnTextActive]}>EN</Text>
@@ -197,6 +196,30 @@ export default function App(){
             />
           )}
         </View>
+
+        <Modal visible={showAppInfoModal} animationType="fade" transparent onRequestClose={() => setShowAppInfoModal(false)}>
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalCard}>
+              <View style={styles.modalLogoWrap}>
+                <View style={styles.modalLogoBadge}>
+                  <Text style={styles.modalLogoBadgeText}>B</Text>
+                </View>
+                <Text style={styles.modalLogoText}>BrightSteps</Text>
+              </View>
+
+              <View style={styles.modalDetailsWrap}>
+                <Text style={styles.modalDetailLine}>App Name : BrightSteps</Text>
+                <Text style={styles.modalDetailLine}>Version : 1.0.0</Text>
+                <Text style={styles.modalDetailLine}>Developer: Nino Jeffrey Montillano</Text>
+                <Text style={styles.modalDetailLine}>All rights reserved : 2026</Text>
+              </View>
+
+              <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setShowAppInfoModal(false)}>
+                <Text style={styles.modalCloseBtnText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
     </NavigationContainer>
   );
@@ -306,6 +329,74 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontWeight: '800',
     fontSize: 13,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(17,24,39,0.48)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    paddingVertical: 20,
+    paddingHorizontal: 18,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    alignItems: 'center',
+  },
+  modalLogoWrap: {
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  modalLogoBadge: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#1D4ED8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  modalLogoBadgeText: {
+    color: '#FACC15',
+    fontSize: 40,
+    fontWeight: '900',
+  },
+  modalLogoText: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#111827',
+  },
+  modalDetailsWrap: {
+    width: '100%',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    gap: 6,
+  },
+  modalDetailLine: {
+    fontSize: 14,
+    color: '#1F2937',
+    fontWeight: '700',
+  },
+  modalCloseBtn: {
+    marginTop: 14,
+    backgroundColor: '#111827',
+    borderRadius: 999,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  modalCloseBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
   },
   contentWrap: {
     flex: 1,

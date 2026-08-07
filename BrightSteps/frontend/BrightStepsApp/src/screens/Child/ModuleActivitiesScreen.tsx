@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { MODULES } from '../../constants/activities';
 import { AppLocale, t } from '../../i18n';
+import { stop } from '../../services/tts';
 
 type ModuleActivitiesScreenProps = {
   route: {
@@ -36,6 +37,8 @@ export default function ModuleActivitiesScreen({ route, navigation, locale }: Mo
   const { moduleKey, moduleEmoji, childName } = route.params;
   const moduleData = MODULES.find((moduleItem) => moduleItem.key === moduleKey);
 
+  useEffect(() => () => stop(), []);
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.topRow}>
@@ -59,14 +62,15 @@ export default function ModuleActivitiesScreen({ route, navigation, locale }: Mo
           <TouchableOpacity
             key={task}
             style={styles.card}
-            onPress={() =>
+            onPress={() => {
+              stop();
               navigation.navigate('ActivityDetail', {
                 moduleKey,
                 moduleEmoji,
                 taskKey: task,
                 childName,
-              })
-            }
+              });
+            }}
           >
             <Text style={styles.cardTitle}>
               {index + 1}. {getTaskLabel(task)}

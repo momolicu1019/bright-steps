@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { speak } from '../../services/tts';
+import { speak, stop } from '../../services/tts';
 import { AppLocale, t } from '../../i18n';
 import { CHILD_MODULE_TILES } from '../../constants/prototypeContent';
 
@@ -15,6 +15,8 @@ type ChildHomeScreenProps = {
 export default function ChildHomeScreen({ childName, childAge, locale }: ChildHomeScreenProps){
   const [coins,setCoins]=useState(12);
   const navigation = useNavigation<any>();
+
+  useEffect(() => () => stop(), []);
 
   const handleReadAloud = () => {
     speak(t('child.learnPrompt'), locale);
@@ -53,6 +55,7 @@ export default function ChildHomeScreen({ childName, childAge, locale }: ChildHo
             key={m.id}
             style={[styles.tile, { backgroundColor: m.color }]}
             onPress={()=>{
+              stop();
               speak(t(`module.${m.moduleKey}`), locale);
               setCoins((c: number)=>c+1);
               if (m.moduleKey === 'emotional') {

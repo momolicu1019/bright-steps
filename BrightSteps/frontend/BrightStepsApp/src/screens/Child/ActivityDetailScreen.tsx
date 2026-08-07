@@ -890,40 +890,51 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
           </View>
         ) : isMath ? (
           <View style={styles.mathWrap}>
-            <Text style={styles.mathInstruction}>{t('activity.mathInstruction')}</Text>
+            <ScrollView style={styles.mathScroll} contentContainerStyle={styles.mathScrollContent}>
+              <Text style={styles.mathInstruction}>{t('activity.mathInstruction')}</Text>
 
-            <View style={styles.mathPresetsRow}>
-              {mathPresetChips.map((preset) => (
-                <TouchableOpacity key={preset.key} style={styles.mathPresetChip} onPress={() => handleMathPresetPress(preset)}>
-                  <Text style={styles.mathPresetText}>{preset.label}</Text>
+              <View style={styles.mathPresetsRow}>
+                {mathPresetChips.map((preset) => (
+                  <TouchableOpacity key={preset.key} style={styles.mathPresetChip} onPress={() => handleMathPresetPress(preset)}>
+                    <Text style={styles.mathPresetText}>{preset.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <View style={styles.mathDisplayCard}>
+                <Text style={styles.mathEquationText}>{mathEquation || ' '}</Text>
+                <Text style={styles.mathDisplayText}>{mathDisplay}</Text>
+              </View>
+
+              <View style={styles.mathGrid}>
+                <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('7')}><Text style={styles.mathKeyText}>7</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('8')}><Text style={styles.mathKeyText}>8</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('9')}><Text style={styles.mathKeyText}>9</Text></TouchableOpacity>
+                <TouchableOpacity style={[styles.mathKey, styles.mathOperatorKey]} onPress={() => handleMathOperatorPress('+')}><Text style={styles.mathKeyText}>+</Text></TouchableOpacity>
+
+                <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('4')}><Text style={styles.mathKeyText}>4</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('5')}><Text style={styles.mathKeyText}>5</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('6')}><Text style={styles.mathKeyText}>6</Text></TouchableOpacity>
+                <TouchableOpacity style={[styles.mathKey, styles.mathOperatorKey]} onPress={() => handleMathOperatorPress('-')}><Text style={styles.mathKeyText}>-</Text></TouchableOpacity>
+
+                <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('1')}><Text style={styles.mathKeyText}>1</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('2')}><Text style={styles.mathKeyText}>2</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('3')}><Text style={styles.mathKeyText}>3</Text></TouchableOpacity>
+                <TouchableOpacity style={[styles.mathKey, styles.mathEqualsKey]} onPress={handleMathEquals}><Text style={[styles.mathKeyText, styles.mathEqualsText]}>=</Text></TouchableOpacity>
+
+                <TouchableOpacity style={[styles.mathKey, styles.mathZeroKey]} onPress={() => handleMathDigitPress('0')}><Text style={styles.mathKeyText}>0</Text></TouchableOpacity>
+                <TouchableOpacity style={[styles.mathKey, styles.mathClearKey]} onPress={handleMathClear}><Text style={[styles.mathKeyText, styles.mathClearText]}>C</Text></TouchableOpacity>
+              </View>
+
+              <View style={styles.mathBottomActions}>
+                <TouchableOpacity style={styles.readAloudButton} onPress={handleReadAloud}>
+                  <Text style={styles.readAloudButtonText}>🔊 {t('child.readAloud')}</Text>
                 </TouchableOpacity>
-              ))}
-            </View>
-
-            <View style={styles.mathDisplayCard}>
-              <Text style={styles.mathEquationText}>{mathEquation || ' '}</Text>
-              <Text style={styles.mathDisplayText}>{mathDisplay}</Text>
-            </View>
-
-            <View style={styles.mathGrid}>
-              <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('7')}><Text style={styles.mathKeyText}>7</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('8')}><Text style={styles.mathKeyText}>8</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('9')}><Text style={styles.mathKeyText}>9</Text></TouchableOpacity>
-              <TouchableOpacity style={[styles.mathKey, styles.mathOperatorKey]} onPress={() => handleMathOperatorPress('+')}><Text style={styles.mathKeyText}>+</Text></TouchableOpacity>
-
-              <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('4')}><Text style={styles.mathKeyText}>4</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('5')}><Text style={styles.mathKeyText}>5</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('6')}><Text style={styles.mathKeyText}>6</Text></TouchableOpacity>
-              <TouchableOpacity style={[styles.mathKey, styles.mathOperatorKey]} onPress={() => handleMathOperatorPress('-')}><Text style={styles.mathKeyText}>-</Text></TouchableOpacity>
-
-              <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('1')}><Text style={styles.mathKeyText}>1</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('2')}><Text style={styles.mathKeyText}>2</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.mathKey} onPress={() => handleMathDigitPress('3')}><Text style={styles.mathKeyText}>3</Text></TouchableOpacity>
-              <TouchableOpacity style={[styles.mathKey, styles.mathEqualsKey]} onPress={handleMathEquals}><Text style={[styles.mathKeyText, styles.mathEqualsText]}>=</Text></TouchableOpacity>
-
-              <TouchableOpacity style={[styles.mathKey, styles.mathZeroKey]} onPress={() => handleMathDigitPress('0')}><Text style={styles.mathKeyText}>0</Text></TouchableOpacity>
-              <TouchableOpacity style={[styles.mathKey, styles.mathClearKey]} onPress={handleMathClear}><Text style={[styles.mathKeyText, styles.mathClearText]}>C</Text></TouchableOpacity>
-            </View>
+                <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
+                  <Text style={styles.resetButtonText}>↻ {t('activity.reset')}</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </View>
         ) : isReading ? (
           <View style={styles.readingWrap}>
@@ -1061,21 +1072,23 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
           </View>
         ) : isEmotions ? (
           <View style={styles.emotionsWrap}>
-            <View style={styles.emotionsGrid}>
-              {EMOTION_CHOICES.map((emotion) => (
-                <TouchableOpacity
-                  key={emotion.key}
-                  style={[
-                    styles.emotionCard,
-                    { backgroundColor: emotion.cardColor },
-                    selectedEmotion === emotion.key && styles.emotionCardActive,
-                  ]}
-                  onPress={() => handleEmotionPress(emotion.key)}
-                >
-                  <Text style={styles.emotionEmoji}>{emotion.emoji}</Text>
-                  <Text style={styles.emotionLabel}>{t(`activity.emotion.${emotion.key}`)}</Text>
-                </TouchableOpacity>
-              ))}
+            <View style={styles.emotionsGridWrap}>
+              <ScrollView style={styles.emotionsGridScroll} contentContainerStyle={styles.emotionsGrid}>
+                {EMOTION_CHOICES.map((emotion) => (
+                  <TouchableOpacity
+                    key={emotion.key}
+                    style={[
+                      styles.emotionCard,
+                      { backgroundColor: emotion.cardColor },
+                      selectedEmotion === emotion.key && styles.emotionCardActive,
+                    ]}
+                    onPress={() => handleEmotionPress(emotion.key)}
+                  >
+                    <Text style={styles.emotionEmoji}>{emotion.emoji}</Text>
+                    <Text style={styles.emotionLabel}>{t(`activity.emotion.${emotion.key}`)}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
 
             <View style={styles.emotionSupportBar}>
@@ -1133,7 +1146,7 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
           </ScrollView>
         )}
 
-        {!isEmotions && !isTalk && !isFocus && !isMove && (
+        {!isEmotions && !isTalk && !isFocus && !isMove && !isMath && (
           <View style={styles.bottomActions}>
             <TouchableOpacity style={styles.readAloudButton} onPress={handleReadAloud}>
               <Text style={styles.readAloudButtonText}>🔊 {t('child.readAloud')}</Text>
@@ -1559,6 +1572,13 @@ const styles = StyleSheet.create({
   },
   mathWrap: {
     flex: 1,
+    minHeight: 0,
+  },
+  mathScroll: {
+    flex: 1,
+  },
+  mathScrollContent: {
+    paddingBottom: 8,
   },
   mathInstruction: {
     fontSize: 14,
@@ -1612,6 +1632,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     rowGap: 10,
+  },
+  mathBottomActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 10,
   },
   mathKey: {
     width: '23.5%',
@@ -1727,49 +1752,59 @@ const styles = StyleSheet.create({
   },
   emotionsWrap: {
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     marginTop: 2,
     paddingBottom: 4,
+  },
+  emotionsGridWrap: {
+    flex: 1,
+    minHeight: 0,
+  },
+  emotionsGridScroll: {
+    flex: 1,
   },
   emotionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    rowGap: 12,
+    rowGap: 8,
+    paddingBottom: 8,
   },
   emotionCard: {
-    width: '48.5%',
-    minHeight: 148,
-    borderRadius: 22,
+    width: '31.5%',
+    minHeight: 102,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 18,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
   },
   emotionCardActive: {
     borderColor: '#0F172A',
-    borderWidth: 3.5,
+    borderWidth: 3,
   },
   emotionEmoji: {
-    fontSize: 52,
+    fontSize: 36,
   },
   emotionLabel: {
-    marginTop: 10,
-    fontSize: 18,
+    marginTop: 6,
+    fontSize: 13,
     color: '#0F172A',
     fontWeight: '900',
+    textAlign: 'center',
   },
   emotionSupportBar: {
-    marginTop: 14,
+    marginTop: 10,
     backgroundColor: '#000000',
-    borderRadius: 20,
+    borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
   },
   emotionSupportText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '800',
   },
   alphabetWrap: {

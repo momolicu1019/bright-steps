@@ -7,6 +7,8 @@ jobs:
   build-android:
     name: Build Android App (EAS)
     runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
     defaults:
       run:
@@ -25,6 +27,13 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Validate Expo token
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "EXPO_TOKEN is not set. Add it in GitHub: Settings > Secrets and variables > Actions > New repository secret"
+            exit 1
+          fi
 
       - name: Setup Expo and EAS CLI
         uses: expo/expo-github-action@v8

@@ -12,9 +12,9 @@ export const CHILD_MODULE_TILES: ModuleTile[] = [
   { id: 'emotional', moduleKey: 'emotional', subtitleKey: 'module.desc.emotional', emoji: '😊', color: '#FFDDE2' },
   { id: 'speech', moduleKey: 'speech', subtitleKey: 'module.desc.speech', emoji: '🗣️', color: '#FFD8E9' },
   { id: 'sensory', moduleKey: 'sensory', subtitleKey: 'module.desc.sensory', emoji: '🎮', color: '#EAF7BF' },
-  { id: 'cognitive', moduleKey: 'cognitive', subtitleKey: 'module.desc.cognitive', emoji: '🧠', color: '#E9DDFB' },
+  // { id: 'cognitive', moduleKey: 'cognitive', subtitleKey: 'module.desc.cognitive', emoji: '🧠', color: '#E9DDFB' },
   { id: 'motor', moduleKey: 'motor', subtitleKey: 'module.desc.motor', emoji: '💪', color: '#D9F2FF' },
-  { id: 'life', moduleKey: 'life_skills', subtitleKey: 'module.desc.life_skills', emoji: '🌍', color: '#FFF0C7' },
+  // { id: 'life', moduleKey: 'life_skills', subtitleKey: 'module.desc.life_skills', emoji: '🌍', color: '#FFF0C7' },
 ];
 
 export const CHILD_ACCESSIBILITY_ITEMS = [

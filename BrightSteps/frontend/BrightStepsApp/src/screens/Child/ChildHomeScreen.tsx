@@ -75,6 +75,26 @@ export default function ChildHomeScreen({ childName, childAge, locale }: ChildHo
                 return;
               }
 
+              if (m.moduleKey === 'sensory') {
+                navigation.navigate('ActivityDetail', {
+                  moduleKey: m.moduleKey,
+                  moduleEmoji: m.emoji,
+                  taskKey: 'bubble_pop',
+                  childName,
+                });
+                return;
+              }
+
+              if (m.moduleKey === 'motor') {
+                navigation.navigate('ActivityDetail', {
+                  moduleKey: m.moduleKey,
+                  moduleEmoji: m.emoji,
+                  taskKey: 'head_to_toe',
+                  childName,
+                });
+                return;
+              }
+
               navigation.navigate('ModuleActivities', {
                 moduleKey: m.moduleKey,
                 moduleEmoji: m.emoji,

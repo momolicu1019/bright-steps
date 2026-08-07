@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppLocale, t } from '../../i18n';
 import { speak } from '../../services/tts';
 
@@ -41,7 +41,6 @@ type TalkTile = {
 type ShapeChoice = {
   key: string;
   nameKey: string;
-  colorKey: string;
   colorHex: string;
   glyph: string;
 };
@@ -53,9 +52,40 @@ type ColorChoice = {
   textColor?: string;
 };
 
+type FocusBubble = {
+  id: number;
+  size: number;
+  left: number;
+  delay: number;
+  duration: number;
+  color: string;
+};
+
+type MoveExerciseStep = {
+  key: string;
+  labelKey: string;
+  emoji: string;
+};
+
 const ALPHABET_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const NUMBER_TILES = Array.from({ length: 50 }, (_, index) => `${index + 1}`);
-const READING_LINES = ['The', 'The cat', 'The cat sat', 'The cat sat on', 'The cat sat on the mat.'];
+const READING_SENTENCES = [
+  'Look at the dog.',
+  'I like my hat.',
+  'The big pig sat.',
+  'He can run fast.',
+  'She has a red cup.',
+  'We can play here.',
+  'Look at that bug.',
+  'I can jump up.',
+  'See the hot sun.',
+  'I go to my bed.',
+  'The sad fox hid.',
+  'It is a big bus.',
+  'My mom made jam.',
+  'We like the wet frog.',
+  'I see a cat.',
+];
 const EMOTION_CHOICES: EmotionChoice[] = [
   { key: 'happy', emoji: '😊', cardColor: '#FFEDB0' },
   { key: 'sad', emoji: '😢', cardColor: '#C2DDF4' },
@@ -64,12 +94,16 @@ const EMOTION_CHOICES: EmotionChoice[] = [
 ];
 
 const SHAPE_CHOICES: ShapeChoice[] = [
-  { key: 'circle', nameKey: 'activity.shape.circle', colorKey: 'activity.color.red', colorHex: '#EF4444', glyph: '●' },
-  { key: 'square', nameKey: 'activity.shape.square', colorKey: 'activity.color.blue', colorHex: '#3B82F6', glyph: '■' },
-  { key: 'triangle', nameKey: 'activity.shape.triangle', colorKey: 'activity.color.yellow', colorHex: '#F59E0B', glyph: '▲' },
-  { key: 'star', nameKey: 'activity.shape.star', colorKey: 'activity.color.green', colorHex: '#10B981', glyph: '★' },
-  { key: 'diamond', nameKey: 'activity.shape.diamond', colorKey: 'activity.color.purple', colorHex: '#8B5CF6', glyph: '◆' },
-  { key: 'rectangle', nameKey: 'activity.shape.rectangle', colorKey: 'activity.color.orange', colorHex: '#F97316', glyph: '▬' },
+  { key: 'circle', nameKey: 'activity.shape.circle', colorHex: '#EF4444', glyph: '●' },
+  { key: 'square', nameKey: 'activity.shape.square', colorHex: '#3B82F6', glyph: '■' },
+  { key: 'triangle', nameKey: 'activity.shape.triangle', colorHex: '#F59E0B', glyph: '▲' },
+  { key: 'star', nameKey: 'activity.shape.star', colorHex: '#10B981', glyph: '★' },
+  { key: 'diamond', nameKey: 'activity.shape.diamond', colorHex: '#8B5CF6', glyph: '◆' },
+  { key: 'rectangle', nameKey: 'activity.shape.rectangle', colorHex: '#F97316', glyph: '▬' },
+  { key: 'heart', nameKey: 'activity.shape.heart', colorHex: '#EC4899', glyph: '♥' },
+  { key: 'pentagon', nameKey: 'activity.shape.pentagon', colorHex: '#14B8A6', glyph: '⬟' },
+  { key: 'hexagon', nameKey: 'activity.shape.hexagon', colorHex: '#6366F1', glyph: '⬢' },
+  { key: 'rhombus', nameKey: 'activity.shape.rhombus', colorHex: '#A855F7', glyph: '⬥' },
 ];
 
 const COLOR_CHOICES: ColorChoice[] = [
@@ -79,7 +113,139 @@ const COLOR_CHOICES: ColorChoice[] = [
   { key: 'green', nameKey: 'activity.color.green', hex: '#10B981' },
   { key: 'orange', nameKey: 'activity.color.orange', hex: '#F97316' },
   { key: 'purple', nameKey: 'activity.color.purple', hex: '#8B5CF6' },
+  { key: 'indigo', nameKey: 'activity.color.indigo', hex: '#4F46E5' },
+  { key: 'magenta', nameKey: 'activity.color.magenta', hex: '#D946EF' },
+  { key: 'pink', nameKey: 'activity.color.pink', hex: '#EC4899' },
+  { key: 'white', nameKey: 'activity.color.white', hex: '#FFFFFF', textColor: '#111827' },
+  { key: 'brown', nameKey: 'activity.color.brown', hex: '#92400E' },
+  { key: 'black', nameKey: 'activity.color.black', hex: '#111827' },
 ];
+
+const MOVE_EXERCISE_STEPS: MoveExerciseStep[] = [
+  { key: 'head', labelKey: 'activity.move.step.head', emoji: '🙂' },
+  { key: 'shoulders', labelKey: 'activity.move.step.shoulders', emoji: '🙆' },
+  { key: 'arms', labelKey: 'activity.move.step.arms', emoji: '💪' },
+  { key: 'knees', labelKey: 'activity.move.step.knees', emoji: '🦵' },
+  { key: 'toes', labelKey: 'activity.move.step.toes', emoji: '🦶' },
+];
+
+const FOCUS_BOARD_HEIGHT = 430;
+const FOCUS_BUBBLE_COLORS = ['#7CC8FF', '#8B9CFF', '#95D5FF', '#A7B8FF', '#8DD7FF'];
+
+function createFocusBubble(id: number): FocusBubble {
+  return {
+    id,
+    size: 54 + Math.floor(Math.random() * 44),
+    left: 8 + Math.floor(Math.random() * 74),
+    delay: Math.floor(Math.random() * 1100),
+    duration: 4200 + Math.floor(Math.random() * 2200),
+    color: FOCUS_BUBBLE_COLORS[Math.floor(Math.random() * FOCUS_BUBBLE_COLORS.length)],
+  };
+}
+
+function FocusBubbleItem({ bubble, onPop }: { bubble: FocusBubble; onPop: (id: number) => void }) {
+  const translateY = useRef(new Animated.Value(-bubble.size - 20)).current;
+
+  useEffect(() => {
+    translateY.setValue(-bubble.size - 20);
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.delay(bubble.delay),
+        Animated.timing(translateY, {
+          toValue: FOCUS_BOARD_HEIGHT - bubble.size + 10,
+          duration: bubble.duration,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    loop.start();
+    return () => {
+      loop.stop();
+      translateY.stopAnimation();
+    };
+  }, [bubble, translateY]);
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={() => onPop(bubble.id)}
+      style={[styles.focusBubbleHitbox, { left: `${bubble.left}%`, width: bubble.size, height: bubble.size }]}
+    >
+      <Animated.View
+        style={[
+          styles.focusBubble,
+          {
+            width: bubble.size,
+            height: bubble.size,
+            borderRadius: bubble.size / 2,
+            backgroundColor: bubble.color,
+            transform: [{ translateY }],
+          },
+        ]}
+      >
+        <View style={styles.focusBubbleHighlight} />
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
+
+function MoveExerciseKid({ currentStepKey }: { currentStepKey: string }) {
+  const headBob = useRef(new Animated.Value(0)).current;
+  const armLift = useRef(new Animated.Value(0)).current;
+  const torsoDip = useRef(new Animated.Value(0)).current;
+  const legBend = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(headBob, { toValue: 1, duration: 700, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+          Animated.timing(armLift, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+          Animated.timing(torsoDip, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+          Animated.timing(legBend, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        ]),
+        Animated.parallel([
+          Animated.timing(headBob, { toValue: 0, duration: 700, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+          Animated.timing(armLift, { toValue: 0, duration: 900, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+          Animated.timing(torsoDip, { toValue: 0, duration: 900, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+          Animated.timing(legBend, { toValue: 0, duration: 900, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        ]),
+      ])
+    );
+
+    animation.start();
+    return () => animation.stop();
+  }, [armLift, headBob, legBend, torsoDip]);
+
+  const headTranslateY = headBob.interpolate({ inputRange: [0, 1], outputRange: [0, currentStepKey === 'head' ? -8 : -3] });
+  const armRotate = armLift.interpolate({ inputRange: [0, 1], outputRange: ['0deg', currentStepKey === 'arms' || currentStepKey === 'shoulders' ? '-40deg' : '-14deg'] });
+  const reverseArmRotate = armLift.interpolate({ inputRange: [0, 1], outputRange: ['0deg', currentStepKey === 'arms' || currentStepKey === 'shoulders' ? '40deg' : '14deg'] });
+  const torsoTranslateY = torsoDip.interpolate({ inputRange: [0, 1], outputRange: [0, currentStepKey === 'toes' ? 18 : currentStepKey === 'knees' ? 10 : 2] });
+  const legRotate = legBend.interpolate({ inputRange: [0, 1], outputRange: ['0deg', currentStepKey === 'knees' ? '18deg' : '5deg'] });
+
+  return (
+    <View style={styles.moveFigureStage}>
+      <Animated.View style={[styles.moveFigureHead, { transform: [{ translateY: headTranslateY }] }]} />
+      <Animated.View style={[styles.moveFigureBody, { transform: [{ translateY: torsoTranslateY }] }]}>
+        <View style={styles.moveFigureTorso} />
+        <Animated.View style={[styles.moveArm, styles.moveArmLeft, { transform: [{ rotate: armRotate }] }]} />
+        <Animated.View style={[styles.moveArm, styles.moveArmRight, { transform: [{ rotate: reverseArmRotate }] }]} />
+        <View style={styles.moveHips} />
+        <Animated.View style={[styles.moveLeg, styles.moveLegLeft, { transform: [{ rotate: legRotate }] }]} />
+        <Animated.View style={[styles.moveLeg, styles.moveLegRight, { transform: [{ rotate: legRotate }] }]} />
+      </Animated.View>
+      <View style={styles.moveGroundShadow} />
+    </View>
+  );
+}
+
+function buildReadingPyramid(sentence: string): string[] {
+  const sanitized = sentence.replace(/[.]/g, '');
+  const words = sanitized.split(' ').filter(Boolean);
+  return words.map((_, index) => `${words.slice(0, index + 1).join(' ')}${index === words.length - 1 ? '.' : ''}`);
+}
 
 const TALK_TILES: TalkTile[] = [
   { key: 'i', wordKey: 'activity.talk.word.i', emoji: '🧒', cardColor: '#F5C8DA' },
@@ -191,17 +357,40 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
   const isReading = taskKey === 'reading';
   const isShapes = taskKey === 'shapes';
   const isColors = taskKey === 'colors';
+  const isFocus = taskKey === 'bubble_pop' && moduleKey === 'sensory';
+  const isMove = taskKey === 'head_to_toe' && moduleKey === 'motor';
   const isEmotions = taskKey === 'emotions';
   const isTalk = taskKey === 'aac' && moduleKey === 'speech';
   const steps = useMemo(() => getActivitySteps(taskKey, locale), [taskKey, locale]);
   const [completed, setCompleted] = useState<boolean[]>(new Array(steps.length).fill(false));
   const [selectedLetter, setSelectedLetter] = useState<string>('A');
   const [selectedNumber, setSelectedNumber] = useState<string>('1');
-  const [selectedReadingLine, setSelectedReadingLine] = useState<string>(READING_LINES[0]);
+  const [selectedReadingSentence, setSelectedReadingSentence] = useState<string | null>(null);
+  const [selectedReadingLine, setSelectedReadingLine] = useState<string>('');
   const [selectedShapeKey, setSelectedShapeKey] = useState<string>(SHAPE_CHOICES[0].key);
   const [selectedColorKey, setSelectedColorKey] = useState<string>(COLOR_CHOICES[0].key);
   const [selectedEmotion, setSelectedEmotion] = useState<EmotionChoice['key']>('angry');
   const [sentenceWords, setSentenceWords] = useState<string[]>([]);
+  const [focusStars, setFocusStars] = useState(0);
+  const [focusBubbles, setFocusBubbles] = useState<FocusBubble[]>(() => Array.from({ length: 6 }, (_, index) => createFocusBubble(index + 1)));
+  const [currentMoveStepIndex, setCurrentMoveStepIndex] = useState(0);
+  const readingLines = useMemo(
+    () => (selectedReadingSentence ? buildReadingPyramid(selectedReadingSentence) : []),
+    [selectedReadingSentence]
+  );
+  const currentMoveStep = MOVE_EXERCISE_STEPS[currentMoveStepIndex] || MOVE_EXERCISE_STEPS[0];
+ 
+  useEffect(() => {
+    if (!isMove) {
+      return;
+    }
+ 
+    const timer = setInterval(() => {
+      setCurrentMoveStepIndex((prev) => (prev + 1) % MOVE_EXERCISE_STEPS.length);
+    }, 2200);
+ 
+    return () => clearInterval(timer);
+  }, [isMove]);
 
   const talkTiles = useMemo(
     () =>
@@ -224,6 +413,10 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
             ? t('activity.shapes.heading')
             : isColors
               ? t('activity.colors.heading')
+              : isFocus
+                ? t('activity.focus.heading')
+                : isMove
+                  ? t('activity.move.heading')
       : `${titleizeTask(taskKey)} • ${locale === 'fil' ? 'Visual Schedule' : 'Visual Schedule'}`;
 
   const toggleStep = (index: number) => {
@@ -243,7 +436,12 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
     }
 
     if (isReading) {
-      setSelectedReadingLine(READING_LINES[0]);
+      if (selectedReadingSentence) {
+        setSelectedReadingLine(readingLines[0] || '');
+      } else {
+        setSelectedReadingSentence(null);
+        setSelectedReadingLine('');
+      }
       return;
     }
 
@@ -254,6 +452,17 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
 
     if (isColors) {
       setSelectedColorKey(COLOR_CHOICES[0].key);
+      return;
+    }
+
+    if (isFocus) {
+      setFocusStars(0);
+      setFocusBubbles(Array.from({ length: 6 }, (_, index) => createFocusBubble(index + 1)));
+      return;
+    }
+ 
+    if (isMove) {
+      setCurrentMoveStepIndex(0);
       return;
     }
 
@@ -281,19 +490,33 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
     }
 
     if (isReading) {
-      speak(READING_LINES.join('. '), 'en');
+      if (selectedReadingSentence) {
+        speak(readingLines.join('. '), 'en');
+      } else {
+        speak(READING_SENTENCES.join('. '), 'en');
+      }
       return;
     }
 
     if (isShapes) {
       const selectedShape = SHAPE_CHOICES.find((shape) => shape.key === selectedShapeKey) || SHAPE_CHOICES[0];
-      speak(`${t(selectedShape.nameKey)} ${t('activity.word.color')} ${t(selectedShape.colorKey)}`, locale);
+      speak(t(selectedShape.nameKey), locale);
       return;
     }
 
     if (isColors) {
       const selectedColor = COLOR_CHOICES.find((color) => color.key === selectedColorKey) || COLOR_CHOICES[0];
       speak(t(selectedColor.nameKey), locale);
+      return;
+    }
+
+    if (isFocus) {
+      speak(t('activity.focus.prompt'), locale);
+      return;
+    }
+ 
+    if (isMove) {
+      speak(`${t('activity.move.prompt')}. ${t(currentMoveStep.labelKey)}`, locale);
       return;
     }
 
@@ -330,9 +553,21 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
     speak(line, 'en');
   };
 
+  const handleReadingSentencePress = (sentence: string) => {
+    const pyramid = buildReadingPyramid(sentence);
+    setSelectedReadingSentence(sentence);
+    setSelectedReadingLine(pyramid[0] || '');
+    speak(sentence, 'en');
+  };
+
+  const handleReadingBack = () => {
+    setSelectedReadingSentence(null);
+    setSelectedReadingLine('');
+  };
+
   const handleShapePress = (shape: ShapeChoice) => {
     setSelectedShapeKey(shape.key);
-    speak(`${t(shape.nameKey)} ${t('activity.word.color')} ${t(shape.colorKey)}`, locale);
+    speak(t(shape.nameKey), locale);
   };
 
   const handleColorPress = (choice: ColorChoice) => {
@@ -343,6 +578,11 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
   const handleEmotionPress = (emotionKey: EmotionChoice['key']) => {
     setSelectedEmotion(emotionKey);
     speak(t(`activity.emotion.${emotionKey}`), locale);
+  };
+
+  const handleFocusBubblePop = (bubbleId: number) => {
+    setFocusStars((prev) => prev + 1);
+    setFocusBubbles((prev) => prev.map((bubble) => (bubble.id === bubbleId ? createFocusBubble(bubbleId) : bubble)));
   };
 
   const handleTalkTilePress = (word: string) => {
@@ -364,7 +604,7 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
             </View>
             <View>
               <Text style={styles.moduleTitle}>{t(`module.${moduleKey}`)}</Text>
-              <Text style={styles.moduleSubtitle}>{t(`module.desc.${moduleKey}`)} • AI Adaptive</Text>
+              <Text style={styles.moduleSubtitle}>{t(`module.desc.${moduleKey}`)}</Text>
               <Text style={styles.childText}>{t('common.forChild', { name: childName })}</Text>
             </View>
           </View>
@@ -373,7 +613,7 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
           </TouchableOpacity>
         </View>
 
-        <Text style={[styles.heading, isTalk && styles.talkHeading, isReading && styles.readingHeading]}>{taskHeading}</Text>
+        <Text style={[styles.heading, isTalk && styles.talkHeading, isReading && styles.readingHeading, isFocus && styles.focusHeading]}>{taskHeading}</Text>
 
         {isAlphabet ? (
           <View style={styles.alphabetWrap}>
@@ -421,21 +661,47 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
           </View>
         ) : isReading ? (
           <View style={styles.readingWrap}>
-            <Text style={styles.readingInstruction}>{t('activity.readingInstruction')}</Text>
-            <View style={styles.selectedReadingCard}>
-              <Text style={styles.selectedReadingLine}>{selectedReadingLine}</Text>
-            </View>
-            <ScrollView style={styles.readingLinesScroll} contentContainerStyle={styles.readingLinesList}>
-              {READING_LINES.map((line, index) => (
-                <TouchableOpacity
-                  key={`${line}-${index}`}
-                  style={[styles.readingLineCard, selectedReadingLine === line && styles.readingLineCardActive]}
-                  onPress={() => handleReadingLinePress(line)}
-                >
-                  <Text style={[styles.readingLineText, selectedReadingLine === line && styles.readingLineTextActive]}>{line}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            {!selectedReadingSentence ? (
+              <>
+                <Text style={styles.readingInstruction}>{t('activity.readingListInstruction')}</Text>
+                <ScrollView style={styles.readingLinesScroll} contentContainerStyle={styles.readingLinesList}>
+                  {READING_SENTENCES.map((sentence, index) => (
+                    <TouchableOpacity
+                      key={`${sentence}-${index}`}
+                      style={styles.readingSentenceCard}
+                      onPress={() => handleReadingSentencePress(sentence)}
+                    >
+                      <Text style={styles.readingSentenceNumber}>{index + 1}.</Text>
+                      <Text style={styles.readingSentenceText}>{sentence}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </>
+            ) : (
+              <>
+                <View style={styles.readingTopActions}>
+                  <TouchableOpacity style={styles.readingBackButton} onPress={handleReadingBack}>
+                    <Text style={styles.readingBackButtonText}>{t('activity.readingBack')}</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.readingInstruction}>{t('activity.readingInstruction')}</Text>
+                <View style={styles.selectedReadingCard}>
+                  <Text style={styles.selectedReadingSentence}>{selectedReadingSentence}</Text>
+                  <Text style={styles.selectedReadingLine}>{selectedReadingLine}</Text>
+                </View>
+                <ScrollView style={styles.readingLinesScroll} contentContainerStyle={styles.readingLinesList}>
+                  {readingLines.map((line, index) => (
+                    <TouchableOpacity
+                      key={`${line}-${index}`}
+                      style={[styles.readingLineCard, selectedReadingLine === line && styles.readingLineCardActive]}
+                      onPress={() => handleReadingLinePress(line)}
+                    >
+                      <Text style={[styles.readingLineText, selectedReadingLine === line && styles.readingLineTextActive]}>{line}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </>
+            )}
           </View>
         ) : isShapes ? (
           <View style={styles.shapeWrap}>
@@ -449,7 +715,6 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
                 >
                   <Text style={[styles.shapeGlyph, { color: shape.colorHex }]}>{shape.glyph}</Text>
                   <Text style={styles.shapeName}>{t(shape.nameKey)}</Text>
-                  <Text style={styles.shapeColorName}>{t(shape.colorKey)}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -475,6 +740,49 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
                 );
               })}
             </ScrollView>
+          </View>
+        ) : isFocus ? (
+          <View style={styles.focusWrap}>
+            <View style={styles.focusTopRow}>
+              <Text style={styles.focusPrompt}>{t('activity.focus.title')}</Text>
+              <View style={styles.focusStarsBadge}>
+                <Text style={styles.focusStarsText}>{focusStars} ⭐</Text>
+              </View>
+            </View>
+
+            <View style={styles.focusBoard}>
+              {focusBubbles.map((bubble) => (
+                <FocusBubbleItem key={`${bubble.id}-${bubble.size}-${bubble.left}-${bubble.duration}`} bubble={bubble} onPop={handleFocusBubblePop} />
+              ))}
+
+              <View style={styles.focusHintPill}>
+                <Text style={styles.focusHintText}>{t('activity.focus.prompt')}</Text>
+              </View>
+            </View>
+          </View>
+        ) : isMove ? (
+          <View style={styles.moveWrap}>
+            <Text style={styles.movePrompt}>{t('activity.move.prompt')}</Text>
+ 
+            <View style={styles.moveStageCard}>
+              <MoveExerciseKid currentStepKey={currentMoveStep.key} />
+            </View>
+ 
+            <View style={styles.moveCurrentStepCard}>
+              <Text style={styles.moveCurrentStepEmoji}>{currentMoveStep.emoji}</Text>
+              <Text style={styles.moveCurrentStepText}>{t(currentMoveStep.labelKey)}</Text>
+            </View>
+ 
+            <View style={styles.moveStepsList}>
+              {MOVE_EXERCISE_STEPS.map((step, index) => (
+                <View key={step.key} style={[styles.moveStepChip, index === currentMoveStepIndex && styles.moveStepChipActive]}>
+                  <Text style={styles.moveStepChipEmoji}>{step.emoji}</Text>
+                  <Text style={[styles.moveStepChipText, index === currentMoveStepIndex && styles.moveStepChipTextActive]}>
+                    {t(step.labelKey)}
+                  </Text>
+                </View>
+              ))}
+            </View>
           </View>
         ) : isEmotions ? (
           <View style={styles.emotionsWrap}>
@@ -550,7 +858,7 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
           </ScrollView>
         )}
 
-        {!isEmotions && !isTalk && (
+        {!isEmotions && !isTalk && !isFocus && !isMove && (
           <View style={styles.bottomActions}>
             <TouchableOpacity style={styles.readAloudButton} onPress={handleReadAloud}>
               <Text style={styles.readAloudButtonText}>🔊 {t('child.readAloud')}</Text>
@@ -614,17 +922,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   closeButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
   },
   closeButtonText: {
     color: '#FFFFFF',
-    fontSize: 24,
-    lineHeight: 26,
+    fontSize: 22,
+    lineHeight: 24,
     fontWeight: '400',
   },
   heading: {
@@ -639,14 +947,247 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 14,
   },
+  focusHeading: {
+    fontSize: 18,
+    marginTop: 14,
+    marginBottom: 10,
+  },
+  moveWrap: {
+    flex: 1,
+  },
+  movePrompt: {
+    fontSize: 17,
+    color: '#6B6661',
+    fontWeight: '800',
+    marginBottom: 10,
+  },
+  moveStageCard: {
+    backgroundColor: '#E9F8FF',
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: '#D5ECFA',
+    padding: 18,
+    minHeight: 320,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  moveFigureStage: {
+    width: 210,
+    height: 250,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  moveFigureHead: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#F8C9A6',
+    marginBottom: 10,
+  },
+  moveFigureBody: {
+    width: 140,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  moveFigureTorso: {
+    width: 78,
+    height: 92,
+    borderRadius: 28,
+    backgroundColor: '#5BA7FF',
+  },
+  moveArm: {
+    position: 'absolute',
+    top: 10,
+    width: 22,
+    height: 88,
+    borderRadius: 14,
+    backgroundColor: '#F8C9A6',
+  },
+  moveArmLeft: {
+    left: 6,
+  },
+  moveArmRight: {
+    right: 6,
+  },
+  moveHips: {
+    width: 62,
+    height: 18,
+    borderRadius: 12,
+    backgroundColor: '#1D4ED8',
+    marginTop: -6,
+  },
+  moveLeg: {
+    position: 'absolute',
+    top: 98,
+    width: 24,
+    height: 96,
+    borderRadius: 16,
+    backgroundColor: '#1F2937',
+  },
+  moveLegLeft: {
+    left: 46,
+  },
+  moveLegRight: {
+    right: 46,
+  },
+  moveGroundShadow: {
+    width: 120,
+    height: 16,
+    borderRadius: 999,
+    backgroundColor: 'rgba(100,116,139,0.18)',
+    marginTop: 10,
+  },
+  moveCurrentStepCard: {
+    marginTop: 12,
+    backgroundColor: '#111827',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  moveCurrentStepEmoji: {
+    fontSize: 22,
+  },
+  moveCurrentStepText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '900',
+  },
+  moveStepsList: {
+    marginTop: 12,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'center',
+  },
+  moveStepChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  moveStepChipActive: {
+    backgroundColor: '#DBEAFE',
+    borderColor: '#60A5FA',
+  },
+  moveStepChipEmoji: {
+    fontSize: 15,
+  },
+  moveStepChipText: {
+    color: '#111827',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  moveStepChipTextActive: {
+    color: '#1D4ED8',
+  },
   readingHeading: {
     fontSize: 24,
+  },
+  focusWrap: {
+    flex: 1,
+  },
+  focusTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  focusPrompt: {
+    fontSize: 18,
+    color: '#6B6661',
+    fontWeight: '800',
+  },
+  focusStarsBadge: {
+    backgroundColor: '#111111',
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  focusStarsText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  focusBoard: {
+    flex: 1,
+    position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: '#D7EBFB',
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: '#E0ECF7',
+    minHeight: FOCUS_BOARD_HEIGHT,
+  },
+  focusBubbleHitbox: {
+    position: 'absolute',
+    top: 0,
+    zIndex: 2,
+  },
+  focusBubble: {
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    paddingTop: 12,
+    paddingLeft: 12,
+    shadowColor: '#7AA7DB',
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  focusBubbleHighlight: {
+    width: '34%',
+    height: '34%',
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.55)',
+  },
+  focusHintPill: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 12,
+    alignSelf: 'center',
+    marginHorizontal: 90,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    borderRadius: 999,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    zIndex: 1,
+  },
+  focusHintText: {
+    textAlign: 'center',
+    color: '#111827',
+    fontSize: 14,
+    fontWeight: '800',
   },
   stepsWrap: {
     flex: 1,
   },
   readingWrap: {
     flex: 1,
+  },
+  readingTopActions: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  readingBackButton: {
+    backgroundColor: '#E5E7EB',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  readingBackButtonText: {
+    color: '#111827',
+    fontSize: 13,
+    fontWeight: '800',
   },
   readingInstruction: {
     fontSize: 14,
@@ -662,6 +1203,12 @@ const styles = StyleSheet.create({
     borderColor: '#C7D2FE',
     marginBottom: 10,
   },
+  selectedReadingSentence: {
+    fontSize: 15,
+    color: '#475569',
+    fontWeight: '700',
+    marginBottom: 6,
+  },
   selectedReadingLine: {
     fontSize: 22,
     color: '#1E3A8A',
@@ -672,6 +1219,29 @@ const styles = StyleSheet.create({
   },
   readingLinesList: {
     paddingBottom: 8,
+  },
+  readingSentenceCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  readingSentenceNumber: {
+    fontSize: 15,
+    color: '#1D4ED8',
+    fontWeight: '900',
+  },
+  readingSentenceText: {
+    flex: 1,
+    fontSize: 15,
+    color: '#0F172A',
+    fontWeight: '700',
   },
   readingLineCard: {
     backgroundColor: '#FFFFFF',
@@ -867,12 +1437,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#0F172A',
     fontWeight: '900',
-  },
-  shapeColorName: {
-    fontSize: 13,
-    color: '#4B5563',
-    fontWeight: '700',
-    marginTop: 3,
   },
   colorCard: {
     width: '48.5%',

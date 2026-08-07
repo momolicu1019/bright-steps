@@ -1,0 +1,36 @@
+name: BrightSteps App Build
+
+on:
+  push:
+
+jobs:
+  build-android:
+    name: Build Android App (EAS)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: BrightSteps/frontend/BrightStepsApp
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: BrightSteps/frontend/BrightStepsApp/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Expo and EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build Android app with EAS
+        run: eas build --platform android --profile preview --non-interactive --wait

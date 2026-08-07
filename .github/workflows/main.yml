@@ -47,4 +47,29 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Build Android app with EAS
-        run: eas build --platform android --profile preview --non-interactive --wait
+        id: eas_build
+        run: |
+          set -euo pipefail
+          eas build --platform android --profile preview --non-interactive --wait --json > eas-build.json
+          node -e "const fs=require('fs'); const buildData=JSON.parse(fs.readFileSync('eas-build.json','utf8')); const build=Array.isArray(buildData)?buildData[0]:buildData; if(!build?.artifacts?.buildUrl){console.error('Missing build artifact URL in EAS output.'); process.exit(1);} if(!build?.id){console.error('Missing build ID in EAS output.'); process.exit(1);} fs.appendFileSync(process.env.GITHUB_OUTPUT, `build_id=${build.id}\nartifact_url=${build.artifacts.buildUrl}\n`);"
+
+      - name: Compute APK filename
+        id: app_meta
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./package.json').version")
+          ARTIFACT_NAME="brightsteps-v${VERSION}.apk"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=${ARTIFACT_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Download APK and rename
+        run: |
+          set -euo pipefail
+          curl -fL "${{ steps.eas_build.outputs.artifact_url }}" -o "${{ steps.app_meta.outputs.artifact_name }}"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.app_meta.outputs.artifact_name }}
+          path: BrightSteps/frontend/BrightStepsApp/${{ steps.app_meta.outputs.artifact_name }}
+          if-no-files-found: error

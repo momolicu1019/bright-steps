@@ -1,7 +1,15 @@
 
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-export default function LargeButton({label, onPress, color="#FFD93D", emoji="⭐"}){
+
+type LargeButtonProps = {
+  label: string;
+  onPress: () => void;
+  color?: string;
+  emoji?: string;
+};
+
+export default function LargeButton({label, onPress, color="#FFD93D", emoji="⭐"}: LargeButtonProps){
   return (
     <TouchableOpacity style={[styles.btn,{backgroundColor:color}]} onPress={onPress} accessibilityRole="button" accessibilityLabel={label}>
       <Text style={styles.emoji}>{emoji}</Text>

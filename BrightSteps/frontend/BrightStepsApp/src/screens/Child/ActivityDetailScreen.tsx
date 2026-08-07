@@ -427,15 +427,17 @@ export default function ActivityDetailScreen({ route, navigation, locale }: Acti
   const taskHeading = isEmotions
     ? t('activity.feelingsQuestion')
     : isTalk
-      ? t('activity.talk.heading')
+      ? t('module.speech')
+      : isAlphabet
+        ? t('task.alphabet')
       : isReading
-        ? t('activity.reading.heading')
+        ? t('task.reading')
         : isNumbers
-          ? t('activity.numbers.heading')
+          ? t('task.numbers')
           : isShapes
             ? t('activity.shapes.heading')
             : isColors
-              ? t('activity.colors.heading')
+              ? t('task.colors')
               : isFocus
                 ? t('activity.focus.heading')
                 : isMove

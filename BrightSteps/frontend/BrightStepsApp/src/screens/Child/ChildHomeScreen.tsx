@@ -107,7 +107,6 @@ export default function ChildHomeScreen({ childName, childAge, locale }: ChildHo
           >
             <View style={styles.tileTopRow}>
               <Text style={styles.tileEmoji}>{m.emoji}</Text>
-              <Text style={styles.tileArrow}>↗</Text>
             </View>
             <Text style={styles.tileTitle}>{t(`module.${m.moduleKey}`)}</Text>
             <Text style={styles.tileSubtitle}>{t(m.subtitleKey)}</Text>
@@ -141,7 +140,6 @@ const styles=StyleSheet.create({
   tile:{width:'48%', borderRadius:18, borderWidth:1, borderColor:'#E5E7EB', padding:12, marginBottom:10},
   tileTopRow:{flexDirection:'row', justifyContent:'space-between', alignItems:'center'},
   tileEmoji:{fontSize:24},
-  tileArrow:{fontSize:18, fontWeight:'900', color:'#374151'},
   tileTitle:{fontSize:16, fontWeight:'900', color:'#111827', marginTop:8},
   tileSubtitle:{fontSize:12, color:'#4B5563', marginTop:4, fontWeight:'600'},
   petCard:{backgroundColor:'#FFFDF2', padding:14, borderRadius:16, marginTop:8, borderWidth:1, borderColor:'#FDE68A'},

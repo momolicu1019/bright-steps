@@ -107,6 +107,9 @@ export default function App(){
     setProfileReady(false);
   };
 
+  const childRoleLabel = locale === 'fil' ? 'Bata' : 'Child';
+  const parentRoleLabel = locale === 'fil' ? 'Magulang' : 'Parent';
+
   if (!bootstrapped) {
     return (
       <NavigationContainer>
@@ -174,14 +177,14 @@ export default function App(){
 
         <View style={styles.roleSwitch}>
           <TouchableOpacity style={[styles.roleBtn, selectedRole === 'child' && styles.roleBtnActive]} onPress={() => setSelectedRole('child')}>
-            <Text style={[styles.roleBtnText, selectedRole === 'child' && styles.roleBtnTextActive]}>{t('tabs.childRole')}</Text>
+            <Text style={[styles.roleBtnText, selectedRole === 'child' && styles.roleBtnTextActive]}>{childRoleLabel}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.roleBtn, selectedRole === 'parent' && styles.roleBtnActive]} onPress={() => setSelectedRole('parent')}>
-            <Text style={[styles.roleBtnText, selectedRole === 'parent' && styles.roleBtnTextActive]}>{t('tabs.parentRole')}</Text>
+            <Text style={[styles.roleBtnText, selectedRole === 'parent' && styles.roleBtnTextActive]}>{parentRoleLabel}</Text>
           </TouchableOpacity>
-          <View style={styles.roleBtnDisabled}>
+          {/* <View style={styles.roleBtnDisabled}>
             <Text style={styles.roleBtnDisabledText}>{t('tabs.teacherRole')}</Text>
-          </View>
+          </View> */}
         </View>
 
         <View style={styles.contentWrap}>

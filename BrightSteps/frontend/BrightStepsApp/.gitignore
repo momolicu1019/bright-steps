@@ -5,3 +5,4 @@ android
 dist-check
 dist-entry-check
 dist-constants-check
+dist-i18n-fix-check

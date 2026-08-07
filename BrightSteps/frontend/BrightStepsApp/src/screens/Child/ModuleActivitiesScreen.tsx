@@ -11,8 +11,10 @@ type ModuleActivitiesScreenProps = {
       childName: string;
     };
   };
+  navigation: {
+    navigate: (screen: string, params: Record<string, unknown>) => void;
+  };
   locale: AppLocale;
-  onToggleLanguage: () => void;
 };
 
 function titleizeTask(task: string): string {
@@ -22,7 +24,7 @@ function titleizeTask(task: string): string {
     .join(' ');
 }
 
-export default function ModuleActivitiesScreen({ route, locale, onToggleLanguage }: ModuleActivitiesScreenProps) {
+export default function ModuleActivitiesScreen({ route, navigation, locale }: ModuleActivitiesScreenProps) {
   const { moduleKey, moduleEmoji, childName } = route.params;
   const moduleData = MODULES.find((moduleItem) => moduleItem.key === moduleKey);
 
@@ -36,9 +38,7 @@ export default function ModuleActivitiesScreen({ route, locale, onToggleLanguage
           <Text style={styles.subHeader}>{t(`module.secondary.${moduleKey}`)}</Text>
           <Text style={styles.childText}>{t('common.forChild', { name: childName })}</Text>
         </View>
-        <TouchableOpacity style={styles.languagePill} onPress={onToggleLanguage}>
-          <Text style={styles.languagePillText}>{locale === 'en' ? 'FIL' : 'EN'}</Text>
-        </TouchableOpacity>
+        <Text style={styles.localeTag}>{locale.toUpperCase()}</Text>
       </View>
 
       {!moduleData ? (
@@ -48,12 +48,23 @@ export default function ModuleActivitiesScreen({ route, locale, onToggleLanguage
         </View>
       ) : (
         moduleData.tasks.map((task, index) => (
-          <View key={task} style={styles.card}>
+          <TouchableOpacity
+            key={task}
+            style={styles.card}
+            onPress={() =>
+              navigation.navigate('ActivityDetail', {
+                moduleKey,
+                moduleEmoji,
+                taskKey: task,
+                childName,
+              })
+            }
+          >
             <Text style={styles.cardTitle}>
               {index + 1}. {titleizeTask(task)}
             </Text>
-            <Text style={styles.cardText}>{t('common.tapToStartHint')}</Text>
-          </View>
+            <Text style={styles.cardText}>Tap to open activity ↗</Text>
+          </TouchableOpacity>
         ))
       )}
     </ScrollView>
@@ -74,18 +85,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
-  languagePill: {
-    backgroundColor: '#1F2937',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginTop: 4,
-  },
-  languagePillText: {
-    color: '#fff',
-    fontWeight: '800',
-    fontSize: 12,
-  },
+  localeTag:{fontSize:12, fontWeight:'900', color:'#6B7280', backgroundColor:'#E5E7EB', paddingHorizontal:10, paddingVertical:5, borderRadius:20},
   header: {
     fontSize: 30,
     fontWeight: '900',

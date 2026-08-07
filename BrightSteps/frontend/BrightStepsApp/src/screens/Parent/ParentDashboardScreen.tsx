@@ -6,29 +6,27 @@ import { PARENT_AI_TIP_KEYS, PARENT_PROGRESS_KEYS, PARENT_REWARD_BADGES } from '
 
 type ParentDashboardScreenProps = {
   childName: string;
+  childAge: string;
   locale: AppLocale;
-  onToggleLanguage: () => void;
-  onEditChildName: () => void;
+  onEditChildProfile: () => void;
 };
 
-export default function ParentDashboardScreen({ childName, locale, onToggleLanguage, onEditChildName }: ParentDashboardScreenProps){
+export default function ParentDashboardScreen({ childName, childAge, locale, onEditChildProfile }: ParentDashboardScreenProps){
   return (
     <ScrollView style={styles.container} contentContainerStyle={{padding:16}}>
       <View style={styles.topRow}>
         <Text style={styles.title}>{t('parent.title')}</Text>
-        <TouchableOpacity style={styles.languagePill} onPress={onToggleLanguage}>
-          <Text style={styles.languagePillText}>{locale === 'en' ? 'FIL' : 'EN'}</Text>
-        </TouchableOpacity>
+        <Text style={styles.localeTag}>{locale.toUpperCase()}</Text>
       </View>
 
       <View style={styles.card}>
         <View style={styles.rowBetween}>
           <Text style={styles.cardTitle}>{t('parent.todayJourney')}</Text>
-          <TouchableOpacity style={styles.addChildButton} onPress={onEditChildName}>
+          <TouchableOpacity style={styles.addChildButton} onPress={onEditChildProfile}>
             <Text style={styles.addChildText}>+ {t('parent.editChildName')}</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.sectionLabel}>{t('parent.todayTitle', { name: childName })}</Text>
+        <Text style={styles.sectionLabel}>{t('parent.todayTitle', { name: childName })} • {childAge} yrs</Text>
         <Text style={styles.cardText}>{t('parent.todayLine1')}</Text>
         <Text style={styles.cardText}>{t('parent.todayLine2')}</Text>
         <Text style={styles.cardText}>{t('parent.todayLine3')}</Text>
@@ -66,7 +64,7 @@ export default function ParentDashboardScreen({ childName, locale, onToggleLangu
         <Text style={styles.cardText}>{t('parent.screenTimeHint')}</Text>
       </View>
 
-      <TouchableOpacity style={styles.editButton} onPress={onEditChildName}>
+      <TouchableOpacity style={styles.editButton} onPress={onEditChildProfile}>
         <Text style={styles.editButtonText}>{t('parent.editChildName')}</Text>
       </TouchableOpacity>
     </ScrollView>
@@ -76,8 +74,7 @@ const styles=StyleSheet.create({
   container:{flex:1, backgroundColor:'#F7F8FF'},
   topRow:{flexDirection:'row', justifyContent:'space-between', alignItems:'center', marginBottom:12},
   title:{fontSize:28, fontWeight:'900', color:'#172554'},
-  languagePill:{backgroundColor:'#1F2937', paddingHorizontal:10, paddingVertical:6, borderRadius:20},
-  languagePillText:{color:'#fff', fontWeight:'800', fontSize:12},
+  localeTag:{fontSize:12, fontWeight:'900', color:'#6B7280', backgroundColor:'#E5E7EB', paddingHorizontal:10, paddingVertical:5, borderRadius:20},
   editButton:{alignSelf:'flex-start', backgroundColor:'#E8ECFF', paddingHorizontal:12, paddingVertical:8, borderRadius:10, marginTop:8, marginBottom:12},
   editButtonText:{fontSize:14, fontWeight:'700', color:'#2E3A8C'},
   card:{backgroundColor:'#fff', padding:16, borderRadius:16, marginBottom:12, borderWidth:1, borderColor:'#E8EAF5'},

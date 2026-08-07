@@ -8,11 +8,11 @@ import { CHILD_ACCESSIBILITY_ITEMS, CHILD_MODULE_TILES } from '../../constants/p
 
 type ChildHomeScreenProps = {
   childName: string;
+  childAge: string;
   locale: AppLocale;
-  onToggleLanguage: () => void;
 };
 
-export default function ChildHomeScreen({ childName, locale, onToggleLanguage }: ChildHomeScreenProps){
+export default function ChildHomeScreen({ childName, childAge, locale }: ChildHomeScreenProps){
   const [coins,setCoins]=useState(12);
   const navigation = useNavigation<any>();
 
@@ -26,11 +26,10 @@ export default function ChildHomeScreen({ childName, locale, onToggleLanguage }:
         <View style={styles.headerTop}>
           <View>
             <Text style={styles.title}>{t('child.greeting', { name: childName })}</Text>
+            <Text style={styles.ageTag}>{childAge} yrs</Text>
             <Text style={styles.prompt}>{t('child.learnPrompt')}</Text>
           </View>
-          <TouchableOpacity style={styles.languagePill} onPress={onToggleLanguage}>
-            <Text style={styles.languagePillText}>{locale === 'en' ? 'FIL' : 'EN'}</Text>
-          </TouchableOpacity>
+          <Text style={styles.localeTag}>{locale.toUpperCase()}</Text>
         </View>
 
         <View style={styles.heroActions}>
@@ -56,6 +55,26 @@ export default function ChildHomeScreen({ childName, locale, onToggleLanguage }:
             onPress={()=>{
               speak(t(`module.${m.moduleKey}`), locale);
               setCoins((c: number)=>c+1);
+              if (m.moduleKey === 'emotional') {
+                navigation.navigate('ActivityDetail', {
+                  moduleKey: m.moduleKey,
+                  moduleEmoji: m.emoji,
+                  taskKey: 'emotions',
+                  childName,
+                });
+                return;
+              }
+
+              if (m.moduleKey === 'speech') {
+                navigation.navigate('ActivityDetail', {
+                  moduleKey: m.moduleKey,
+                  moduleEmoji: m.emoji,
+                  taskKey: 'aac',
+                  childName,
+                });
+                return;
+              }
+
               navigation.navigate('ModuleActivities', {
                 moduleKey: m.moduleKey,
                 moduleEmoji: m.emoji,
@@ -94,8 +113,8 @@ const styles=StyleSheet.create({
   headerTop:{flexDirection:'row', justifyContent:'space-between', alignItems:'flex-start'},
   title:{fontSize:30, fontWeight:'900', color:'#172554'},
   prompt:{fontSize:15, color:'#4B5563', marginTop:4},
-  languagePill:{backgroundColor:'#111827', paddingHorizontal:10, paddingVertical:6, borderRadius:20},
-  languagePillText:{color:'#fff', fontWeight:'800', fontSize:12},
+  localeTag:{fontSize:12, fontWeight:'900', color:'#6B7280', backgroundColor:'#E5E7EB', paddingHorizontal:10, paddingVertical:5, borderRadius:20},
+  ageTag:{fontSize:12, fontWeight:'800', color:'#1D4ED8', marginTop:4},
   heroActions:{marginTop:12, flexDirection:'row', justifyContent:'space-between', alignItems:'center'},
   streakChip:{backgroundColor:'#FFF3D0', paddingHorizontal:12, paddingVertical:8, borderRadius:999},
   streakText:{fontSize:12, fontWeight:'800', color:'#7C2D12'},

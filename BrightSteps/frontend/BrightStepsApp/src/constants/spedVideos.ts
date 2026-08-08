@@ -7,7 +7,12 @@ type SpedVideoBase = {
 
 export type SpedVideo =
   | (SpedVideoBase & { kind: 'mp4'; uri: string })
-  | (SpedVideoBase & { kind: 'youtube'; youtubeId: string });
+  | (SpedVideoBase & {
+      kind: 'youtube';
+      youtubeId: string;
+      /** Optional direct MP4 you host — downloaded after a completed watch for offline playback. */
+      offlineMp4Uri?: string;
+    });
 
 export function youtubeEmbedUrl(youtubeId: string): string {
   const params = new URLSearchParams({
@@ -31,26 +36,26 @@ export const SPED_VIDEOS: SpedVideo[] = [
   },
   {
     id: 'calm_breathing',
-    kind: 'mp4',
+    kind: 'youtube',
+    youtubeId: 'RiMb2Bw4Ae8',
     titleKey: 'spedVideo.calmBreathing.title',
     descriptionKey: 'spedVideo.calmBreathing.desc',
     emoji: '🌬️',
-    uri: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
   },
   {
     id: 'social_story',
-    kind: 'mp4',
+    kind: 'youtube',
+    youtubeId: 'KU1koy_tshw',
     titleKey: 'spedVideo.socialStory.title',
     descriptionKey: 'spedVideo.socialStory.desc',
     emoji: '🤝',
-    uri: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
   },
   {
     id: 'sensory_break',
-    kind: 'mp4',
+    kind: 'youtube',
+    youtubeId: '7s3jhXy63Wg',
     titleKey: 'spedVideo.sensoryBreak.title',
     descriptionKey: 'spedVideo.sensoryBreak.desc',
     emoji: '🎧',
-    uri: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
   },
 ];

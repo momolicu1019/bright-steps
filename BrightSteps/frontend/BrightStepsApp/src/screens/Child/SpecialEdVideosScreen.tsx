@@ -1,11 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
-import { WebView } from 'react-native-webview';
+import YoutubePlayer from 'react-native-youtube-iframe';
+import NetInfo from '@react-native-community/netinfo';
 import { AppLocale, t } from '../../i18n';
-import { SPED_VIDEOS, SpedVideo, youtubeEmbedUrl } from '../../constants/spedVideos';
+import { SPED_VIDEOS, SpedVideo } from '../../constants/spedVideos';
 import { stop } from '../../services/tts';
 import { ResponsiveVideoLayout, useResponsiveVideoLayout } from '../../utils/responsiveVideoLayout';
+import { cacheVideoFromUrl, getCachedVideoUri, isVideoCachedOnDevice } from '../../services/videoOfflineCache';
+import { getVideoWatchHistory, recordVideoWatch } from '../../services/videoWatchHistory';
 
 type SpecialEdVideosScreenProps = {
   route: {
@@ -21,34 +24,61 @@ type SpecialEdVideosScreenProps = {
 type VideoPlayerProps = {
   video: SpedVideo;
   layout: ResponsiveVideoLayout;
+  isOnline: boolean;
+  cachedLocalUri: string | null;
+  onCompletedWatch: () => void;
 };
 
-function youtubeEmbedHtml(youtubeId: string): string {
-  const src = youtubeEmbedUrl(youtubeId);
-  return `<!DOCTYPE html>
-<html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-    <style>
-      * { box-sizing: border-box; }
-      html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #111827; }
-      .frame { position: absolute; inset: 0; }
-      iframe { width: 100%; height: 100%; border: 0; }
-    </style>
-  </head>
-  <body>
-    <div class="frame">
-      <iframe
-        src="${src}"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        allowfullscreen
-      ></iframe>
-    </div>
-  </body>
-</html>`;
+function YoutubeInAppPlayer({
+  videoId,
+  layout,
+  onCompletedWatch,
+}: {
+  videoId: string;
+  layout: ResponsiveVideoLayout;
+  onCompletedWatch: () => void;
+}) {
+  const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    setPlaying(false);
+  }, [videoId]);
+
+  return (
+    <YoutubePlayer
+      key={`${videoId}-${layout.playerWidth}x${layout.playerHeight}`}
+      height={layout.playerHeight}
+      width={layout.playerWidth}
+      play={playing}
+      videoId={videoId}
+      onChangeState={(state) => {
+        if (state === 'ended') {
+          setPlaying(false);
+          onCompletedWatch();
+        }
+        if (state === 'paused') {
+          setPlaying(false);
+        }
+        if (state === 'playing') {
+          setPlaying(true);
+        }
+      }}
+      webViewProps={{
+        allowsFullscreenVideo: true,
+        allowsInlineMediaPlayback: true,
+        androidLayerType: 'hardware',
+      }}
+      initialPlayerParams={{
+        controls: true,
+        modestbranding: true,
+        rel: false,
+        preventFullScreen: false,
+      }}
+    />
+  );
 }
 
-function VideoPlayer({ video, layout }: VideoPlayerProps) {
+function VideoPlayer({ video, layout, isOnline, cachedLocalUri, onCompletedWatch }: VideoPlayerProps) {
   const frameStyle = useMemo(
     () => ({
       width: layout.playerWidth,
@@ -61,21 +91,38 @@ function VideoPlayer({ video, layout }: VideoPlayerProps) {
     [layout.playerHeight, layout.playerWidth]
   );
 
+  if (!isOnline && !cachedLocalUri) {
+    return (
+      <View style={[frameStyle, styles.offlinePlayer]}>
+        <Text style={styles.offlinePlayerTitle}>{t('spedVideo.offlineBlockedTitle')}</Text>
+        <Text style={styles.offlinePlayerText}>{t('spedVideo.offlineBlockedBody')}</Text>
+      </View>
+    );
+  }
+
+  if (!isOnline && cachedLocalUri) {
+    return (
+      <View style={frameStyle}>
+        <Video
+          key={`${video.id}-cached-${layout.playerWidth}`}
+          style={styles.webViewFill}
+          source={{ uri: cachedLocalUri }}
+          useNativeControls
+          resizeMode={ResizeMode.CONTAIN}
+          onPlaybackStatusUpdate={(status) => {
+            if (status.isLoaded && status.didJustFinish) {
+              onCompletedWatch();
+            }
+          }}
+        />
+      </View>
+    );
+  }
+
   if (video.kind === 'youtube') {
     return (
       <View style={frameStyle}>
-        <WebView
-          key={`${video.id}-${layout.playerWidth}x${layout.playerHeight}`}
-          style={styles.webViewFill}
-          source={{ html: youtubeEmbedHtml(video.youtubeId) }}
-          allowsFullscreenVideo
-          allowsInlineMediaPlayback
-          javaScriptEnabled
-          domStorageEnabled
-          mediaPlaybackRequiresUserAction={false}
-          originWhitelist={['https://*']}
-          scrollEnabled={false}
-        />
+        <YoutubeInAppPlayer videoId={video.youtubeId} layout={layout} onCompletedWatch={onCompletedWatch} />
       </View>
     );
   }
@@ -88,6 +135,11 @@ function VideoPlayer({ video, layout }: VideoPlayerProps) {
         source={{ uri: video.uri }}
         useNativeControls
         resizeMode={ResizeMode.CONTAIN}
+        onPlaybackStatusUpdate={(status) => {
+          if (status.isLoaded && status.didJustFinish) {
+            onCompletedWatch();
+          }
+        }}
       />
     </View>
   );
@@ -97,8 +149,70 @@ export default function SpecialEdVideosScreen({ route, locale }: SpecialEdVideos
   const { moduleEmoji, childName } = route.params;
   const [activeVideo, setActiveVideo] = useState<SpedVideo>(SPED_VIDEOS[0]);
   const layout = useResponsiveVideoLayout();
+  const [isOnline, setIsOnline] = useState(true);
+  const [cachedLocalUri, setCachedLocalUri] = useState<string | null>(null);
+  const [watchedIds, setWatchedIds] = useState<Set<string>>(new Set());
+  const [cachedIds, setCachedIds] = useState<Set<string>>(new Set());
+  const [isSavingOffline, setIsSavingOffline] = useState(false);
+  const [offlineNotice, setOfflineNotice] = useState<string | null>(null);
+
+  const refreshMeta = useCallback(async () => {
+    const history = await getVideoWatchHistory();
+    setWatchedIds(new Set(history.map((entry) => entry.videoId)));
+
+    const cached = new Set<string>();
+    await Promise.all(
+      SPED_VIDEOS.map(async (video) => {
+        if (await isVideoCachedOnDevice(video.id)) {
+          cached.add(video.id);
+        }
+      })
+    );
+    setCachedIds(cached);
+
+    const localUri = await getCachedVideoUri(activeVideo.id);
+    setCachedLocalUri(localUri);
+  }, [activeVideo.id]);
 
   useEffect(() => () => stop(), []);
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      setIsOnline(Boolean(state.isConnected && state.isInternetReachable !== false));
+    });
+    NetInfo.fetch().then((state) => {
+      setIsOnline(Boolean(state.isConnected && state.isInternetReachable !== false));
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    refreshMeta();
+  }, [refreshMeta]);
+
+  const handleCompletedWatch = useCallback(async () => {
+    await recordVideoWatch(activeVideo.id, true);
+    setOfflineNotice(null);
+
+    const youtubeMirror =
+      activeVideo.kind === 'youtube' && activeVideo.offlineMp4Uri ? activeVideo.offlineMp4Uri : null;
+
+    if (youtubeMirror && isOnline) {
+      setIsSavingOffline(true);
+      try {
+        await cacheVideoFromUrl(activeVideo.id, youtubeMirror);
+        setOfflineNotice(t('spedVideo.savedOfflineFile'));
+      } catch {
+        setOfflineNotice(t('spedVideo.saveOfflineFailed'));
+      } finally {
+        setIsSavingOffline(false);
+      }
+    } else if (activeVideo.kind === 'youtube') {
+      setOfflineNotice(t('spedVideo.savedWatchHistory'));
+    }
+
+    await refreshMeta();
+  }, [activeVideo, isOnline, refreshMeta]);
 
   if (!SPED_VIDEOS.length) {
     return (
@@ -107,6 +221,9 @@ export default function SpecialEdVideosScreen({ route, locale }: SpecialEdVideos
       </View>
     );
   }
+
+  const showCachedBadge = cachedIds.has(activeVideo.id);
+  const showOnlineOnly = activeVideo.kind === 'youtube' && !showCachedBadge;
 
   return (
     <ScrollView
@@ -128,7 +245,26 @@ export default function SpecialEdVideosScreen({ route, locale }: SpecialEdVideos
         <Text style={styles.hint}>{t('spedVideo.watchHint')}</Text>
 
         <View style={styles.playerWrap}>
-          <VideoPlayer video={activeVideo} layout={layout} />
+          <VideoPlayer
+            video={activeVideo}
+            layout={layout}
+            isOnline={isOnline}
+            cachedLocalUri={cachedLocalUri}
+            onCompletedWatch={handleCompletedWatch}
+          />
+          {isSavingOffline ? (
+            <View style={styles.savingRow}>
+              <ActivityIndicator size="small" color="#1D4ED8" />
+              <Text style={styles.streamNote}>{t('spedVideo.savingOffline')}</Text>
+            </View>
+          ) : null}
+          {offlineNotice ? <Text style={styles.streamNote}>{offlineNotice}</Text> : null}
+          {showOnlineOnly && isOnline ? (
+            <Text style={styles.streamNote}>{t('spedVideo.inAppStream')}</Text>
+          ) : null}
+          {showCachedBadge ? (
+            <Text style={styles.savedBadge}>{t('spedVideo.availableOffline')}</Text>
+          ) : null}
           <Text style={styles.nowPlaying}>
             {activeVideo.emoji} {t(activeVideo.titleKey)}
           </Text>
@@ -137,6 +273,8 @@ export default function SpecialEdVideosScreen({ route, locale }: SpecialEdVideos
 
         {SPED_VIDEOS.map((video) => {
           const selected = video.id === activeVideo.id;
+          const watched = watchedIds.has(video.id);
+          const saved = cachedIds.has(video.id);
           return (
             <TouchableOpacity
               key={video.id}
@@ -148,6 +286,13 @@ export default function SpecialEdVideosScreen({ route, locale }: SpecialEdVideos
                 {video.kind === 'youtube' ? ' • YouTube' : ''}
               </Text>
               <Text style={styles.cardText}>{t(video.descriptionKey)}</Text>
+              {(watched || saved) && (
+                <Text style={styles.cardMeta}>
+                  {watched ? `✓ ${t('spedVideo.watchedLabel')}` : ''}
+                  {watched && saved ? ' • ' : ''}
+                  {saved ? `📥 ${t('spedVideo.offlineLabel')}` : ''}
+                </Text>
+              )}
             </TouchableOpacity>
           );
         })}
@@ -189,6 +334,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   webViewFill: { flex: 1, width: '100%', height: '100%', backgroundColor: '#111827' },
+  offlinePlayer: { alignItems: 'center', justifyContent: 'center', padding: 16 },
+  offlinePlayerTitle: { fontSize: 16, fontWeight: '900', color: '#F9FAFB', textAlign: 'center' },
+  offlinePlayerText: { fontSize: 13, fontWeight: '600', color: '#D1D5DB', marginTop: 8, textAlign: 'center' },
+  savingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, alignSelf: 'stretch' },
+  streamNote: { fontSize: 12, color: '#6B7280', fontWeight: '600', marginTop: 8, alignSelf: 'stretch' },
+  savedBadge: { fontSize: 12, color: '#047857', fontWeight: '800', marginTop: 6, alignSelf: 'stretch' },
   nowPlaying: { fontSize: 17, fontWeight: '900', color: '#111827', marginTop: 10, alignSelf: 'stretch' },
   nowPlayingDesc: { fontSize: 13, color: '#4B5563', fontWeight: '600', marginTop: 4, alignSelf: 'stretch' },
   card: {
@@ -202,4 +353,5 @@ const styles = StyleSheet.create({
   cardSelected: { borderColor: '#1D4ED8', backgroundColor: '#EEF2FF' },
   cardTitle: { fontSize: 16, fontWeight: '900', color: '#111827' },
   cardText: { fontSize: 13, color: '#4B5563', marginTop: 4, fontWeight: '600' },
+  cardMeta: { fontSize: 12, color: '#1D4ED8', fontWeight: '800', marginTop: 6 },
 });

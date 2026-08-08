@@ -53,7 +53,7 @@ export const SPED_VIDEOS: SpedVideo[] = [
   {
     id: 'sensory_break',
     kind: 'youtube',
-    youtubeId: '7s3jhXy63Wg',
+    youtubeId: '0Kux20X_z9s',
     titleKey: 'spedVideo.sensoryBreak.title',
     descriptionKey: 'spedVideo.sensoryBreak.desc',
     emoji: '🎧',

@@ -11,12 +11,14 @@ import {
   nextCoinMilestone,
   topModuleKeys,
 } from '../../utils/childProgress';
+import { streakLabel } from '../../utils/streakLabel';
 
 type ParentDashboardScreenProps = {
   childName: string;
   childAge: string;
   locale: AppLocale;
   stars: number;
+  streakDays: number;
   moduleVisits: ModuleVisitCounts;
   onEditChildProfile: () => void;
 };
@@ -26,6 +28,7 @@ export default function ParentDashboardScreen({
   childAge,
   locale,
   stars,
+  streakDays,
   moduleVisits,
   onEditChildProfile,
 }: ParentDashboardScreenProps){
@@ -69,7 +72,7 @@ export default function ParentDashboardScreen({
           {t('parent.todayTitle', { name: childName })}
           {childAge ? ` • ${childAge} yrs` : ''}
         </Text>
-        <Text style={styles.cardText}>🔥 {t('child.streak')}</Text>
+        <Text style={styles.cardText}>🔥 {streakLabel(streakDays)}</Text>
         {todayJourneyLines.map((line, index) => (
           <Text key={`${index}-${line}`} style={styles.cardText}>{line}</Text>
         ))}

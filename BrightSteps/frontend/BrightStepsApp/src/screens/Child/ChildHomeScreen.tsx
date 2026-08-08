@@ -5,16 +5,18 @@ import { useNavigation } from '@react-navigation/native';
 import { speak, stop } from '../../services/tts';
 import { AppLocale, t } from '../../i18n';
 import { CHILD_MODULE_TILES } from '../../constants/prototypeContent';
+import { streakLabel } from '../../utils/streakLabel';
 
 type ChildHomeScreenProps = {
   childName: string;
   childAge: string;
   locale: AppLocale;
   stars: number;
+  streakDays: number;
   onEarnStar: (moduleKey: string) => void;
 };
 
-export default function ChildHomeScreen({ childName, childAge, locale, stars, onEarnStar }: ChildHomeScreenProps){
+export default function ChildHomeScreen({ childName, childAge, locale, stars, streakDays, onEarnStar }: ChildHomeScreenProps){
   const navigation = useNavigation<any>();
 
   useEffect(() => () => stop(), []);
@@ -37,7 +39,7 @@ export default function ChildHomeScreen({ childName, childAge, locale, stars, on
 
         <View style={styles.heroActions}>
           <View style={styles.streakChip}>
-            <Text style={styles.streakText}>🔥 {t('child.streak')}</Text>
+            <Text style={styles.streakText}>🔥 {streakLabel(streakDays)}</Text>
           </View>
           <TouchableOpacity style={styles.readButton} onPress={handleReadAloud}>
             <Text style={styles.readButtonText}>🔊 {t('child.readAloud')}</Text>

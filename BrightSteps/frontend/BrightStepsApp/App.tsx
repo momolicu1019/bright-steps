@@ -1,12 +1,14 @@
 
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ChildHomeScreen from './src/screens/Child/ChildHomeScreen';
 import ParentDashboardScreen from './src/screens/Parent/ParentDashboardScreen';
+import StarConfettiOverlay from './src/components/StarConfettiOverlay';
 import { AppLocale, setLocale, t } from './src/i18n';
+import { getLearningStreakDays, recordLearningActivity } from './src/services/learningStreak';
 
 const ModuleActivitiesScreen = require('./src/screens/Child/ModuleActivitiesScreen').default;
 const ActivityDetailScreen = require('./src/screens/Child/ActivityDetailScreen').default;
@@ -14,6 +16,8 @@ const SpecialEdVideosScreen = require('./src/screens/Child/SpecialEdVideosScreen
 const PROFILE_STORAGE_KEY = 'brightsteps.childProfile';
 const CHILD_STARS_STORAGE_KEY = 'brightsteps.childStars';
 const MODULE_VISITS_STORAGE_KEY = 'brightsteps.moduleVisits';
+const LOCALE_STORAGE_KEY = 'brightsteps.locale';
+const STAR_CONFETTI_MILESTONE_KEY = 'brightsteps.lastStarConfettiMilestone';
 const DEFAULT_CHILD_STARS = 12;
 
 const ChildStack = createNativeStackNavigator();
@@ -23,12 +27,13 @@ type ChildNavigatorProps = {
   childAge: string;
   locale: AppLocale;
   stars: number;
+  streakDays: number;
   onEarnStar: (moduleKey: string) => void;
 };
 
-function ChildNavigator({ childName, childAge, locale, stars, onEarnStar }: ChildNavigatorProps) {
+function ChildNavigator({ childName, childAge, locale, stars, streakDays, onEarnStar }: ChildNavigatorProps) {
   return (
-    <ChildStack.Navigator>
+    <ChildStack.Navigator key={locale}>
       <ChildStack.Screen name="ChildHome" options={{ headerShown: false }}>
         {() => (
           <ChildHomeScreen
@@ -36,6 +41,7 @@ function ChildNavigator({ childName, childAge, locale, stars, onEarnStar }: Chil
             childAge={childAge}
             locale={locale}
             stars={stars}
+            streakDays={streakDays}
             onEarnStar={onEarnStar}
           />
         )}
@@ -67,10 +73,12 @@ export default function App(){
   const [showAppInfoModal, setShowAppInfoModal] = useState(false);
   const [childStars, setChildStars] = useState(DEFAULT_CHILD_STARS);
   const [moduleVisits, setModuleVisits] = useState<Record<string, number>>({});
+  const [learningStreak, setLearningStreak] = useState(0);
+  const [showStarConfetti, setShowStarConfetti] = useState(false);
+  const [confettiStarCount, setConfettiStarCount] = useState(0);
+  const lastConfettiMilestoneRef = useRef(0);
 
-  useLayoutEffect(() => {
-    setLocale(locale);
-  }, [locale]);
+  setLocale(locale);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -89,12 +97,24 @@ export default function App(){
         }
 
         const savedStars = await AsyncStorage.getItem(CHILD_STARS_STORAGE_KEY);
+        let parsedStars = DEFAULT_CHILD_STARS;
         if (savedStars !== null) {
-          const parsedStars = Number(savedStars);
-          if (Number.isFinite(parsedStars) && parsedStars >= 0) {
-            setChildStars(parsedStars);
+          const n = Number(savedStars);
+          if (Number.isFinite(n) && n >= 0) {
+            parsedStars = n;
+            setChildStars(n);
           }
         }
+
+        const savedConfettiMilestone = await AsyncStorage.getItem(STAR_CONFETTI_MILESTONE_KEY);
+        const milestoneNumber = Number(savedConfettiMilestone);
+        if (Number.isFinite(milestoneNumber) && milestoneNumber >= 30) {
+          lastConfettiMilestoneRef.current = milestoneNumber;
+        } else if (parsedStars >= 30) {
+          lastConfettiMilestoneRef.current = Math.floor(parsedStars / 30) * 30;
+        }
+
+        setLearningStreak(await getLearningStreakDays());
 
         const savedVisits = await AsyncStorage.getItem(MODULE_VISITS_STORAGE_KEY);
         if (savedVisits) {
@@ -102,6 +122,12 @@ export default function App(){
           if (parsedVisits && typeof parsedVisits === 'object') {
             setModuleVisits(parsedVisits);
           }
+        }
+
+        const savedLocale = await AsyncStorage.getItem(LOCALE_STORAGE_KEY);
+        if (savedLocale === 'en' || savedLocale === 'fil') {
+          setLocale(savedLocale);
+          setAppLocale(savedLocale);
         }
       } catch {
         // Ignore invalid persisted data and continue with setup flow.
@@ -113,8 +139,14 @@ export default function App(){
     loadProfile();
   }, []);
 
+  const applyLocale = (next: AppLocale) => {
+    setLocale(next);
+    setAppLocale(next);
+    AsyncStorage.setItem(LOCALE_STORAGE_KEY, next).catch(() => {});
+  };
+
   const toggleLanguage = () => {
-    setAppLocale((current) => (current === 'en' ? 'fil' : 'en'));
+    applyLocale(locale === 'en' ? 'fil' : 'en');
   };
 
   const startApp = () => {
@@ -142,10 +174,24 @@ export default function App(){
     setProfileReady(false);
   };
 
+  const handleConfettiFinished = useCallback(() => {
+    setShowStarConfetti(false);
+  }, []);
+
   const earnChildStar = (moduleKey: string) => {
+    void recordLearningActivity().then(setLearningStreak);
+
     setChildStars((current) => {
       const next = current + 1;
       AsyncStorage.setItem(CHILD_STARS_STORAGE_KEY, String(next)).catch(() => {});
+
+      if (next >= 30 && next % 30 === 0 && next > lastConfettiMilestoneRef.current) {
+        lastConfettiMilestoneRef.current = next;
+        AsyncStorage.setItem(STAR_CONFETTI_MILESTONE_KEY, String(next)).catch(() => {});
+        setConfettiStarCount(next);
+        setShowStarConfetti(true);
+      }
+
       return next;
     });
 
@@ -156,8 +202,8 @@ export default function App(){
     });
   };
 
-  const childRoleLabel = locale === 'fil' ? 'Bata' : 'Child';
-  const parentRoleLabel = locale === 'fil' ? 'Magulang' : 'Parent';
+  const childRoleLabel = t('tabs.childRole');
+  const parentRoleLabel = t('tabs.parentRole');
 
   if (!bootstrapped) {
     return (
@@ -217,10 +263,10 @@ export default function App(){
             </View>
           </TouchableOpacity>
           <View style={styles.langGroup}>
-            <TouchableOpacity style={[styles.langBtn, locale === 'en' && styles.langBtnActive]} onPress={() => setAppLocale('en')}>
+            <TouchableOpacity style={[styles.langBtn, locale === 'en' && styles.langBtnActive]} onPress={() => applyLocale('en')}>
               <Text style={[styles.langBtnText, locale === 'en' && styles.langBtnTextActive]}>EN</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.langBtn, locale === 'fil' && styles.langBtnActive]} onPress={() => setAppLocale('fil')}>
+            <TouchableOpacity style={[styles.langBtn, locale === 'fil' && styles.langBtnActive]} onPress={() => applyLocale('fil')}>
               <Text style={[styles.langBtnText, locale === 'fil' && styles.langBtnTextActive]}>FIL</Text>
             </TouchableOpacity>
           </View>
@@ -245,6 +291,7 @@ export default function App(){
               childAge={childAge}
               locale={locale}
               stars={childStars}
+              streakDays={learningStreak}
               onEarnStar={earnChildStar}
             />
           ) : (
@@ -253,11 +300,18 @@ export default function App(){
               childAge={childAge}
               locale={locale}
               stars={childStars}
+              streakDays={learningStreak}
               moduleVisits={moduleVisits}
               onEditChildProfile={beginEditChildProfile}
             />
           )}
         </View>
+
+        <StarConfettiOverlay
+          visible={showStarConfetti}
+          stars={confettiStarCount}
+          onFinished={handleConfettiFinished}
+        />
 
         <Modal visible={showAppInfoModal} animationType="fade" transparent onRequestClose={() => setShowAppInfoModal(false)}>
           <View style={styles.modalBackdrop}>

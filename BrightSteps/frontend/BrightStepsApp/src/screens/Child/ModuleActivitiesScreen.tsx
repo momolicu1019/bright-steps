@@ -77,7 +77,7 @@ export default function ModuleActivitiesScreen({ route, navigation, locale }: Mo
             <Text style={styles.cardTitle}>
               {index + 1}. {getTaskLabel(task)}
             </Text>
-            <Text style={styles.cardText}>Tap to open activity ↗</Text>
+            <Text style={styles.cardText}>{t('common.tapToOpenActivity')}</Text>
           </TouchableOpacity>
         ))
       )}

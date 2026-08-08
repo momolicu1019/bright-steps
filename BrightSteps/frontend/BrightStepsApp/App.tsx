@@ -1,8 +1,8 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ChildHomeScreen from './src/screens/Child/ChildHomeScreen';
 import ParentDashboardScreen from './src/screens/Parent/ParentDashboardScreen';
@@ -10,7 +10,11 @@ import { AppLocale, setLocale, t } from './src/i18n';
 
 const ModuleActivitiesScreen = require('./src/screens/Child/ModuleActivitiesScreen').default;
 const ActivityDetailScreen = require('./src/screens/Child/ActivityDetailScreen').default;
+const SpecialEdVideosScreen = require('./src/screens/Child/SpecialEdVideosScreen').default;
 const PROFILE_STORAGE_KEY = 'brightsteps.childProfile';
+const CHILD_STARS_STORAGE_KEY = 'brightsteps.childStars';
+const MODULE_VISITS_STORAGE_KEY = 'brightsteps.moduleVisits';
+const DEFAULT_CHILD_STARS = 12;
 
 const ChildStack = createNativeStackNavigator();
 
@@ -18,19 +22,32 @@ type ChildNavigatorProps = {
   childName: string;
   childAge: string;
   locale: AppLocale;
+  stars: number;
+  onEarnStar: (moduleKey: string) => void;
 };
 
-function ChildNavigator({ childName, childAge, locale }: ChildNavigatorProps) {
+function ChildNavigator({ childName, childAge, locale, stars, onEarnStar }: ChildNavigatorProps) {
   return (
     <ChildStack.Navigator>
       <ChildStack.Screen name="ChildHome" options={{ headerShown: false }}>
-        {() => <ChildHomeScreen childName={childName} childAge={childAge} locale={locale} />}
+        {() => (
+          <ChildHomeScreen
+            childName={childName}
+            childAge={childAge}
+            locale={locale}
+            stars={stars}
+            onEarnStar={onEarnStar}
+          />
+        )}
       </ChildStack.Screen>
       <ChildStack.Screen name="ModuleActivities" options={{ title: t('common.activities') }}>
         {(props) => <ModuleActivitiesScreen {...props} locale={locale} />}
       </ChildStack.Screen>
       <ChildStack.Screen name="ActivityDetail" options={{ title: t('common.activity') }}>
         {(props) => <ActivityDetailScreen {...props} locale={locale} />}
+      </ChildStack.Screen>
+      <ChildStack.Screen name="SpecialEdVideos" options={{ title: t('module.sped_videos') }}>
+        {(props) => <SpecialEdVideosScreen {...props} locale={locale} />}
       </ChildStack.Screen>
     </ChildStack.Navigator>
   );
@@ -48,25 +65,43 @@ export default function App(){
   const [locale, setAppLocale] = useState<AppLocale>('en');
   const [selectedRole, setSelectedRole] = useState<RoleView>('child');
   const [showAppInfoModal, setShowAppInfoModal] = useState(false);
+  const [childStars, setChildStars] = useState(DEFAULT_CHILD_STARS);
+  const [moduleVisits, setModuleVisits] = useState<Record<string, number>>({});
 
-  setLocale(locale);
+  useLayoutEffect(() => {
+    setLocale(locale);
+  }, [locale]);
 
   useEffect(() => {
     const loadProfile = async () => {
       try {
         const saved = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
-        if (!saved) {
-          return;
+        if (saved) {
+          const parsed = JSON.parse(saved) as { childName?: string; childAge?: string };
+          const storedName = (parsed.childName || '').trim();
+          const storedAge = (parsed.childAge || '').trim();
+
+          if (storedName) {
+            setChildName(storedName);
+            setChildAge(storedAge);
+            setProfileReady(true);
+          }
         }
 
-        const parsed = JSON.parse(saved) as { childName?: string; childAge?: string };
-        const storedName = (parsed.childName || '').trim();
-        const storedAge = (parsed.childAge || '').trim();
+        const savedStars = await AsyncStorage.getItem(CHILD_STARS_STORAGE_KEY);
+        if (savedStars !== null) {
+          const parsedStars = Number(savedStars);
+          if (Number.isFinite(parsedStars) && parsedStars >= 0) {
+            setChildStars(parsedStars);
+          }
+        }
 
-        if (storedName) {
-          setChildName(storedName);
-          setChildAge(storedAge);
-          setProfileReady(true);
+        const savedVisits = await AsyncStorage.getItem(MODULE_VISITS_STORAGE_KEY);
+        if (savedVisits) {
+          const parsedVisits = JSON.parse(savedVisits) as Record<string, number>;
+          if (parsedVisits && typeof parsedVisits === 'object') {
+            setModuleVisits(parsedVisits);
+          }
         }
       } catch {
         // Ignore invalid persisted data and continue with setup flow.
@@ -107,13 +142,29 @@ export default function App(){
     setProfileReady(false);
   };
 
+  const earnChildStar = (moduleKey: string) => {
+    setChildStars((current) => {
+      const next = current + 1;
+      AsyncStorage.setItem(CHILD_STARS_STORAGE_KEY, String(next)).catch(() => {});
+      return next;
+    });
+
+    setModuleVisits((current) => {
+      const next = { ...current, [moduleKey]: (current[moduleKey] ?? 0) + 1 };
+      AsyncStorage.setItem(MODULE_VISITS_STORAGE_KEY, JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+  };
+
   const childRoleLabel = locale === 'fil' ? 'Bata' : 'Child';
   const parentRoleLabel = locale === 'fil' ? 'Magulang' : 'Parent';
 
   if (!bootstrapped) {
     return (
       <NavigationContainer>
-        <View style={styles.setupContainer} />
+        <View style={styles.setupContainer}>
+          <ActivityIndicator size="large" color="#FF8B94" accessibilityLabel={t('common.loading')} />
+        </View>
       </NavigationContainer>
     );
   }
@@ -189,12 +240,20 @@ export default function App(){
 
         <View style={styles.contentWrap}>
           {selectedRole === 'child' ? (
-            <ChildNavigator childName={childName} childAge={childAge} locale={locale} />
+            <ChildNavigator
+              childName={childName}
+              childAge={childAge}
+              locale={locale}
+              stars={childStars}
+              onEarnStar={earnChildStar}
+            />
           ) : (
             <ParentDashboardScreen
               childName={childName}
               childAge={childAge}
               locale={locale}
+              stars={childStars}
+              moduleVisits={moduleVisits}
               onEditChildProfile={beginEditChildProfile}
             />
           )}

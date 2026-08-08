@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { speak, stop } from '../../services/tts';
@@ -10,10 +10,11 @@ type ChildHomeScreenProps = {
   childName: string;
   childAge: string;
   locale: AppLocale;
+  stars: number;
+  onEarnStar: (moduleKey: string) => void;
 };
 
-export default function ChildHomeScreen({ childName, childAge, locale }: ChildHomeScreenProps){
-  const [coins,setCoins]=useState(12);
+export default function ChildHomeScreen({ childName, childAge, locale, stars, onEarnStar }: ChildHomeScreenProps){
   const navigation = useNavigation<any>();
 
   useEffect(() => () => stop(), []);
@@ -45,7 +46,7 @@ export default function ChildHomeScreen({ childName, childAge, locale }: ChildHo
 
         <View style={styles.coinsCard}>
           <Text style={styles.coinsLabel}>{t('child.yourStars')}</Text>
-          <Text style={styles.coinsValue}>🪙 {t('child.coins', { count: coins })}</Text>
+          <Text style={styles.coinsValue}>🪙 {t('child.coins', { count: stars })}</Text>
         </View>
       </View>
 
@@ -57,7 +58,7 @@ export default function ChildHomeScreen({ childName, childAge, locale }: ChildHo
             onPress={()=>{
               stop();
               speak(t(`module.${m.moduleKey}`), locale);
-              setCoins((c: number)=>c+1);
+              onEarnStar(m.moduleKey);
               if (m.moduleKey === 'emotional') {
                 navigation.navigate('ActivityDetail', {
                   moduleKey: m.moduleKey,
@@ -96,6 +97,15 @@ export default function ChildHomeScreen({ childName, childAge, locale }: ChildHo
                   moduleKey: m.moduleKey,
                   moduleEmoji: m.emoji,
                   taskKey: 'head_to_toe',
+                  childName,
+                  childAge,
+                });
+                return;
+              }
+
+              if (m.moduleKey === 'sped_videos') {
+                navigation.navigate('SpecialEdVideos', {
+                  moduleEmoji: m.emoji,
                   childName,
                   childAge,
                 });

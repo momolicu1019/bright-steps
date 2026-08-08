@@ -1,17 +1,56 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { AppLocale, t } from '../../i18n';
-import { PARENT_AI_TIP_KEYS, PARENT_PROGRESS_KEYS, PARENT_REWARD_BADGES } from '../../constants/prototypeContent';
+import { PARENT_AI_TIP_KEYS, PARENT_REWARD_BADGES, CHILD_MODULE_TILES } from '../../constants/prototypeContent';
+import {
+  bearLevelFromCoins,
+  favoriteModuleKey,
+  modulesExploredCount,
+  ModuleVisitCounts,
+  nextCoinMilestone,
+  topModuleKeys,
+} from '../../utils/childProgress';
 
 type ParentDashboardScreenProps = {
   childName: string;
   childAge: string;
   locale: AppLocale;
+  stars: number;
+  moduleVisits: ModuleVisitCounts;
   onEditChildProfile: () => void;
 };
 
-export default function ParentDashboardScreen({ childName, childAge, locale, onEditChildProfile }: ParentDashboardScreenProps){
+export default function ParentDashboardScreen({
+  childName,
+  childAge,
+  locale,
+  stars,
+  moduleVisits,
+  onEditChildProfile,
+}: ParentDashboardScreenProps){
+  const bearLevel = bearLevelFromCoins(stars);
+  const nextMilestone = nextCoinMilestone(stars);
+  const favoriteKey = favoriteModuleKey(moduleVisits);
+  const exploredCount = modulesExploredCount(moduleVisits);
+  const todayModules = topModuleKeys(moduleVisits, 3);
+
+  const todayJourneyLines = useMemo(() => {
+    if (!todayModules.length) {
+      return [t('parent.todayNoActivity')];
+    }
+    return todayModules.map((moduleKey) =>
+      t('parent.todayModuleLine', { module: t(`module.${moduleKey}`) })
+    );
+  }, [todayModules]);
+
+  const favoriteModuleLabel = favoriteKey ? t(`module.${favoriteKey}`) : t('parent.progressNoFavorite');
+  const leastExploredModuleLabel = useMemo(() => {
+    const visited = new Set(Object.keys(moduleVisits));
+    const untouched = CHILD_MODULE_TILES.find((tile) => !visited.has(tile.moduleKey));
+    return untouched ? t(`module.${untouched.moduleKey}`) : t('parent.progressAllExplored');
+  }, [moduleVisits]);
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={{padding:16}}>
       <View style={styles.topRow}>
@@ -26,10 +65,15 @@ export default function ParentDashboardScreen({ childName, childAge, locale, onE
             <Text style={styles.addChildText}>+ {t('parent.editChildName')}</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.sectionLabel}>{t('parent.todayTitle', { name: childName })} • {childAge} yrs</Text>
-        <Text style={styles.cardText}>{t('parent.todayLine1')}</Text>
-        <Text style={styles.cardText}>{t('parent.todayLine2')}</Text>
-        <Text style={styles.cardText}>{t('parent.todayLine3')}</Text>
+        <Text style={styles.sectionLabel}>
+          {t('parent.todayTitle', { name: childName })}
+          {childAge ? ` • ${childAge} yrs` : ''}
+        </Text>
+        <Text style={styles.cardText}>🔥 {t('child.streak')}</Text>
+        {todayJourneyLines.map((line, index) => (
+          <Text key={`${index}-${line}`} style={styles.cardText}>{line}</Text>
+        ))}
+        <Text style={styles.cardText}>🪙 {t('child.coins', { count: stars })}</Text>
       </View>
 
       <View style={styles.card}>
@@ -42,25 +86,28 @@ export default function ParentDashboardScreen({ childName, childAge, locale, onE
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{t('parent.progressTitle')}</Text>
         <View style={styles.statsRow}>
-          <Text style={styles.statItem}>{t(PARENT_PROGRESS_KEYS[0])}</Text>
-          <Text style={styles.statItem}>{t(PARENT_PROGRESS_KEYS[1])}</Text>
+          <Text style={styles.statItem}>{t('parent.progressLine1', { coins: stars })}</Text>
+          <Text style={styles.statItem}>{t('parent.progressLine2', { count: exploredCount })}</Text>
         </View>
         <View style={styles.statsRow}>
-          <Text style={styles.statItem}>{t(PARENT_PROGRESS_KEYS[2])}</Text>
-          <Text style={styles.statItem}>{t(PARENT_PROGRESS_KEYS[3])}</Text>
+          <Text style={styles.statItem}>{t('parent.progressLine3', { module: favoriteModuleLabel })}</Text>
+          <Text style={styles.statItem}>{t('parent.progressLine4', { module: leastExploredModuleLabel })}</Text>
         </View>
       </View>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{t('parent.rewards')}</Text>
         <Text style={styles.cardText}>{PARENT_REWARD_BADGES.join(' ')}</Text>
-        <Text style={styles.cardText}>🐻 Milo the Bear • Level 3</Text>
-        <Text style={styles.cardText}>Next: Chef Hat at 50 coins</Text>
+        <Text style={styles.cardText}>
+          {t('parent.rewardsSummary', { coins: stars, level: bearLevel })}
+        </Text>
+        <Text style={styles.cardText}>{t('child.petMessage')}</Text>
+        <Text style={styles.cardText}>{t('parent.nextReward', { coins: nextMilestone })}</Text>
       </View>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{t('parent.screenTime')}</Text>
-        <Text style={styles.cardText}>30 min</Text>
+        <Text style={styles.cardText}>{t('parent.screenTimeValue', { count: stars })}</Text>
         <Text style={styles.cardText}>{t('parent.screenTimeHint')}</Text>
       </View>
 

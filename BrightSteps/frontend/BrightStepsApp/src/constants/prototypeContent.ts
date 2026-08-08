@@ -14,6 +14,7 @@ export const CHILD_MODULE_TILES: ModuleTile[] = [
   { id: 'sensory', moduleKey: 'sensory', subtitleKey: 'module.desc.sensory', emoji: '🎮', color: '#EAF7BF' },
   // { id: 'cognitive', moduleKey: 'cognitive', subtitleKey: 'module.desc.cognitive', emoji: '🧠', color: '#E9DDFB' },
   { id: 'motor', moduleKey: 'motor', subtitleKey: 'module.desc.motor', emoji: '💪', color: '#D9F2FF' },
+  { id: 'sped_videos', moduleKey: 'sped_videos', subtitleKey: 'module.desc.sped_videos', emoji: '🎬', color: '#EDE9FE' },
   // { id: 'life', moduleKey: 'life_skills', subtitleKey: 'module.desc.life_skills', emoji: '🌍', color: '#FFF0C7' },
 ];
 
